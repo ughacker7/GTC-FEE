@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 250" width="250" height="250">
+  <style>
+    .stamp-blue-heavy { fill: none; stroke: #1e3a8a; stroke-width: 4.5; stroke-linecap: round; stroke-linejoin: round; }
+    .stamp-blue-medium { fill: none; stroke: #1e3a8a; stroke-width: 2; stroke-linecap: round; }
+    .stamp-blue-fine { fill: none; stroke: #1e3a8a; stroke-width: 1.2; stroke-linecap: round; }
+    .text-top { fill: #1e3a8a; font-family: 'Arial Black', Arial, sans-serif; font-weight: 900; font-size: 13.5px; letter-spacing: 3px; }
+    .text-bottom { fill: #1e3a8a; font-family: 'Arial Black', Arial, sans-serif; font-weight: 900; font-size: 11px; letter-spacing: 2px; }
+    .center-main { fill: #1e3a8a; font-family: 'Arial Black', Arial, sans-serif; font-weight: 900; font-size: 22px; text-anchor: middle; letter-spacing: 2.5px; }
+    .center-sub { fill: #1e3a8a; font-family: 'Arial', sans-serif; font-weight: bold; font-size: 11px; text-anchor: middle; letter-spacing: 3px; }
+    .star { fill: #1e3a8a; font-size: 14px; text-anchor: middle; }
+  </style>
+
+  <!-- Real Rubber Stamp Outer Heavy Broken/Rough Border (Authentic Ink Feel) -->
+  <circle cx="125" cy="125" r="115" class="stamp-blue-heavy" stroke-dasharray="140, 3, 90, 4, 180, 3, 110, 5" />
+  
+  <!-- Inner Double Border Rings -->
+  <circle cx="125" cy="125" r="105" class="stamp-blue-medium" />
+  <circle cx="125" cy="125" r="78" class="stamp-blue-fine" />
+
+  <!-- Top Curved Text: Gautam Teaching Center -->
+  <path id="curveTop" d="M 32,125 A 93,93 0 0,1 218,125" fill="none" />
+  <text>
+    <textPath href="#curveTop" startOffset="50%" text-anchor="middle" class="text-top">
+      GAUTAM TEACHING CENTER
+    </textPath>
+  </text>
+
+  <!-- Bottom Curved Text: Sarbadi Nagar & Estd -->
+  <path id="curveBottom" d="M 218,125 A 93,93 0 0,1 32,125" fill="none" />
+  <text>
+    <textPath href="#curveBottom" startOffset="50%" text-anchor="middle" class="text-bottom">
+      ★ SARBADI NAGAR ★ ESTD 2022
+    </textPath>
+  </text>
+
+  <!-- Center Official Stamp Core -->
+  <text x="125" y="104" class="center-sub">FEE DEPARTMENT</text>
+  <text x="125" y="131" class="center-main">VERIFIED</text>
+  <text x="125" y="152" class="center-sub">PAID &amp; SIGNED</text>
+</svg>

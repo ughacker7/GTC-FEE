@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gautam Teaching Center - Fee Management Portal</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase App & Realtime Database SDK (Compat v10.8.0) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #0b0f19;
+            color: #f1f5f9;
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 selection:bg-cyan-500 selection:text-white relative overflow-x-hidden">
+
+    <!-- Glowing ambient background lights -->
+    <div class="fixed top-1/4 -left-32 w-80 h-80 bg-indigo-600/15 rounded-full blur-[100px] pointer-events-none"></div>
+    <div class="fixed bottom-1/4 -right-32 w-80 h-80 bg-cyan-600/15 rounded-full blur-[100px] pointer-events-none"></div>
+
+    <!-- CLOUD DATA SYNC / SPLASH SCREEN -->
+    <div id="sync-screen" class="fixed inset-0 bg-slate-950 z-50 flex flex-col items-center justify-center transition-opacity duration-300">
+        <div class="relative w-20 h-20 mb-5">
+            <div class="absolute inset-0 border-4 border-cyan-500/20 rounded-2xl"></div>
+            <div class="absolute inset-0 border-4 border-cyan-500 rounded-2xl animate-spin border-t-transparent"></div>
+            <div class="absolute inset-0 flex items-center justify-center font-black text-cyan-400 text-xl tracking-wider">GTC</div>
+        </div>
+        <h2 class="text-xl sm:text-2xl font-black tracking-tight text-white">Gautam Teaching Center</h2>
+        <p id="sync-status" class="text-slate-400 mt-2 text-xs sm:text-sm font-medium">Connecting Live Cloud Database...</p>
+        <div class="w-44 h-1.5 bg-slate-800 rounded-full mt-5 overflow-hidden">
+            <div id="sync-progress" class="h-full bg-gradient-to-r from-cyan-500 to-blue-500 w-1/2 animate-pulse"></div>
+        </div>
+    </div>
+
+    <!-- MAIN LOGIN PORTAL -->
+    <div id="login-container" class="hidden opacity-0 transition-all duration-300 w-full max-w-md p-6 sm:p-8 bg-slate-900/90 backdrop-blur-2xl border border-slate-800 rounded-3xl shadow-2xl relative z-10">
+        
+        <!-- Header Info -->
+        <div class="text-center mb-6">
+            <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-600 flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-cyan-600/30">
+                <i class="fa-solid fa-receipt"></i>
+            </div>
+            <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight">GTC Fee Portal</h1>
+            <p class="text-slate-400 text-xs sm:text-sm mt-1">Official cloud fee ledger & receipt system</p>
+        </div>
+
+        <!-- Role Toggle Tabs (Hidden by default, Teacher tab only appears after secret gesture) -->
+        <div id="role-tabs-container" class="hidden flex bg-slate-950/80 p-1.5 rounded-2xl mb-6 border border-slate-800">
+            <button onclick="switchTab('teacher')" id="tab-teacher" class="flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl text-slate-400 hover:text-white transition-all flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-chalkboard-user"></i>
+                <span>Teacher Login</span>
+            </button>
+            <button onclick="switchTab('student')" id="tab-student" class="flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl bg-cyan-600 text-white transition-all shadow-md flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-user-graduate"></i>
+                <span>Student Login</span>
+            </button>
+        </div>
+
+        <!-- Teacher Login Form (Hidden by default) -->
+        <div id="form-teacher" class="space-y-4 hidden">
+            <div class="bg-indigo-950/30 border border-indigo-500/20 p-3 rounded-xl text-center text-xs text-indigo-300 mb-2">
+                <i class="fa-solid fa-shield-halved mr-1"></i> Secret Teacher Admin Portal Unlocked
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Teacher ID / Username</label>
+                <div class="relative">
+                    <i class="fa-solid fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                    <input type="text" id="teacher-id" name="gtc_user_unique" placeholder="Enter teacher ID" value="" autocomplete="chrome-off" readonly onfocus="this.removeAttribute('readonly');" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-3 text-white text-sm font-semibold focus:outline-none focus:border-cyan-500 transition">
+                </div>
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Secure Password</label>
+                <div class="relative">
+                    <i class="fa-solid fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                    <input type="password" id="teacher-pass" name="gtc_pwd_unique" placeholder="Enter password" value="" autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly');" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-10 py-3 text-white text-sm font-semibold focus:outline-none focus:border-cyan-500 transition">
+                    <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs">
+                        <i id="pass-eye-icon" class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+            <button onclick="handleTeacherLogin()" class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-indigo-600/30 text-sm flex items-center justify-center gap-2 mt-2">
+                <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                <span>Login to Dashboard</span>
+            </button>
+        </div>
+
+        <!-- Student Login Form (Default Visible) -->
+        <div id="form-student" class="space-y-4">
+            <div>
+                <label class="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Registered Mobile Number</label>
+                <div class="relative">
+                    <i class="fa-solid fa-phone absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                    <input type="tel" id="student-phone" maxlength="10" placeholder="10-digit mobile number" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-3 text-white text-sm font-bold tracking-wider focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition">
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1">Ex: 9142754164 ya apna registered phone number</p>
+            </div>
+            <button onclick="handleStudentLogin()" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-cyan-600/30 text-sm flex items-center justify-center gap-2 mt-2">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <span>Check Fee Dues & Receipts</span>
+            </button>
+        </div>
+
+        <!-- Footer Help with Secret Long-Press Gesture on Phone Number -->
+        <div class="mt-6 pt-4 border-t border-slate-800 text-center">
+            <p class="text-[11px] text-slate-500">
+                Need help? Contact Gautam Sir at 
+                <span id="secret-trigger-phone" class="text-cyan-400 font-bold cursor-pointer select-none active:text-cyan-200 transition" title="Press & hold for 3 seconds">
+                    +91 8217598939
+                </span>
+            </p>
+            <p id="secret-status-hint" class="text-[9px] text-indigo-400 mt-1 hidden animate-pulse">🔓 Secret Teacher Mode Unlocked!</p>
+        </div>
+
+    </div>
+
+    <!-- POPUP MODAL -->
+    <div id="custom-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full mx-4 shadow-2xl text-center transform scale-95 transition-transform duration-300" id="modal-box">
+            <div id="modal-icon" class="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-500 flex items-center justify-center mx-auto mb-4 text-xl font-bold border border-rose-500/30">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 id="modal-title" class="text-base font-bold text-white mb-2">Access Denied</h3>
+            <p id="modal-message" class="text-slate-400 text-xs mb-6">Invalid Teacher ID or Password.</p>
+            <button onclick="closeModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl transition-all border border-slate-700 text-xs">ठीक है (OK)</button>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBDJnlr-VJt3OqvGeCRIzNCUjhLndpvyoQ",
+            authDomain: "gtc-fee-portal.firebaseapp.com",
+            databaseURL: "https://gtc-fee-portal-default-rtdb.firebaseio.com",
+            projectId: "gtc-fee-portal",
+            storageBucket: "gtc-fee-portal.firebasestorage.app",
+            messagingSenderId: "861357054407",
+            appId: "1:861357054407:web:8d1c8a5dce4c3969c361e2",
+            measurementId: "G-SJWZFVM3YQ"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const syncStatus = document.getElementById('sync-status');
+            const syncScreen = document.getElementById('sync-screen');
+            const loginContainer = document.getElementById('login-container');
+
+            const cleanInputs = () => {
+                const u = document.getElementById('teacher-id');
+                const p = document.getElementById('teacher-pass');
+                if (u) u.value = '';
+                if (p) p.value = '';
+            };
+            cleanInputs();
+            setTimeout(cleanInputs, 150);
+
+            syncStatus.innerText = 'Connecting Cloud Database...';
+
+            db.ref('gtc_students').once('value').then((snapshot) => {
+                if(!snapshot.exists()) {
+                    const defaultStudent = [{ 
+                        id: "1", 
+                        name: "Darpan Kumari", 
+                        fatherName: "Chandan Sharma", 
+                        phone: "9142754164", 
+                        admissionDate: "2026-01-26", 
+                        monthlyFee: 150, 
+                        paidCycles: 3, 
+                        transactions: [] 
+                    }];
+                    db.ref('gtc_students').set(defaultStudent);
+                }
+                
+                syncStatus.innerText = 'Cloud Sync Successful!';
+                setTimeout(() => {
+                    syncScreen.classList.add('opacity-0');
+                    setTimeout(() => {
+                        syncScreen.style.display = 'none';
+                        loginContainer.classList.remove('hidden');
+                        setTimeout(() => loginContainer.classList.remove('opacity-0'), 50);
+                    }, 300);
+                }, 300);
+            }).catch((error) => {
+                syncStatus.innerText = 'Connection Error! Check Internet.';
+                console.error(error);
+                setTimeout(() => {
+                    syncScreen.style.display = 'none';
+                    loginContainer.classList.remove('hidden');
+                    loginContainer.classList.remove('opacity-0');
+                }, 800);
+            });
+
+            
+            setupSecretTrigger();
+        });
+
+        function setupSecretTrigger() {
+            const phoneEl = document.getElementById('secret-trigger-phone');
+            const tabsContainer = document.getElementById('role-tabs-container');
+            const hintEl = document.getElementById('secret-status-hint');
+            if (!phoneEl) return;
+
+            let pressTimer = null;
+
+            const triggerUnlock = () => {
+                if (tabsContainer) tabsContainer.classList.remove('hidden');
+                if (hintEl) hintEl.classList.remove('hidden');
+                switchTab('teacher');
+                try {
+                    if (navigator.vibrate) navigator.vibrate(100);
+                } catch(e) {}
+            };
+
+            // Touch events for mobile
+            phoneEl.addEventListener('touchstart', (e) => {
+                pressTimer = setTimeout(triggerUnlock, 3000);
+            });
+            phoneEl.addEventListener('touchend', () => {
+                if (pressTimer) clearTimeout(pressTimer);
+            });
+
+            // Mouse events for desktop
+            phoneEl.addEventListener('mousedown', (e) => {
+                pressTimer = setTimeout(triggerUnlock, 3000);
+            });
+            phoneEl.addEventListener('mouseup', () => {
+                if (pressTimer) clearTimeout(pressTimer);
+            });
+            phoneEl.addEventListener('mouseleave', () => {
+                if (pressTimer) clearTimeout(pressTimer);
+            });
+        }
+
+        function switchTab(role) {
+            const tabTeacher = document.getElementById('tab-teacher');
+            const tabStudent = document.getElementById('tab-student');
+            const formTeacher = document.getElementById('form-teacher');
+            const formStudent = document.getElementById('form-student');
+
+            if (role === 'teacher') {
+                tabTeacher.className = "flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl bg-indigo-600 text-white transition-all shadow-md flex items-center justify-center gap-1.5";
+                tabStudent.className = "flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl text-slate-400 hover:text-white transition-all flex items-center justify-center gap-1.5";
+                formTeacher.classList.remove('hidden');
+                formStudent.classList.add('hidden');
+            } else {
+                tabStudent.className = "flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl bg-cyan-600 text-white transition-all shadow-md flex items-center justify-center gap-1.5";
+                tabTeacher.className = "flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl text-slate-400 hover:text-white transition-all flex items-center justify-center gap-1.5";
+                formStudent.classList.remove('hidden');
+                formTeacher.classList.add('hidden');
+            }
+        }
+
+        function togglePasswordVisibility() {
+            const pass = document.getElementById('teacher-pass');
+            const icon = document.getElementById('pass-eye-icon');
+            if (pass.type === 'password') {
+                pass.type = 'text';
+                icon.className = 'fa-solid fa-eye-slash';
+            } else {
+                pass.type = 'password';
+                icon.className = 'fa-solid fa-eye';
+            }
+        }
+
+        function showModal(title, message, isError = true) {
+            const modal = document.getElementById('custom-modal');
+            const modalBox = document.getElementById('modal-box');
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = message;
+            
+            const icon = document.getElementById('modal-icon');
+            if(isError) {
+                icon.className = "w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-500 flex items-center justify-center mx-auto mb-4 text-xl font-bold border border-rose-500/30";
+                icon.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>`;
+            } else {
+                icon.className = "w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-4 text-xl font-bold border border-emerald-500/30";
+                icon.innerHTML = `<i class="fa-solid fa-check"></i>`;
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalBox.classList.remove('scale-95');
+                modalBox.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('custom-modal');
+            const modalBox = document.getElementById('modal-box');
+            modal.classList.add('opacity-0');
+            modalBox.classList.remove('scale-100');
+            modalBox.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function handleTeacherLogin() {
+            const id = document.getElementById('teacher-id').value.trim();
+            const pass = document.getElementById('teacher-pass').value.trim();
+            
+            // HACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDK HACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDKHACKER KI MAA KI CHUUUUUT 120 KE SPEED SE RANDI WAAL TERI MAA KI CHUT BSDK  Base64 for "ABCDEFGHIJKLMNOPQRST"
+            const secretCode = "R1MzNjEzODk=";
+            
+            if (id.toLowerCase() === "gautam" && btoa(pass) === secretCode) {
+                localStorage.setItem("teacherLoggedIn", "true");
+                window.location.href = "teacher.html";
+            } else {
+                showModal("गलत पासवर्ड", "क्षमा करें, टीचर आईडी या पासवर्ड गलत है। कृपया जांच करें और दोबारा प्रयास करें।");
+            }
+        }
+
+        function handleStudentLogin() {
+            const phone = document.getElementById('student-phone').value.trim();
+            
+            if (phone.length !== 10) {
+                showModal("अमान्य मोबाइल नंबर", "कृपया अपना सही 10-अंकों का रजिस्टर्ड मोबाइल नंबर दर्ज करें।");
+                return;
+            }
+
+            db.ref('gtc_students').once('value').then((snapshot) => {
+                const students = snapshot.val() || [];
+                const student = students.find(s => s.phone === phone);
+
+                if (student) {
+                    localStorage.setItem("studentPhone", phone);
+                    window.location.href = "student.html";
+                } else {
+                    showModal(
+                        "नंबर नहीं मिला!", 
+                        "क्षमा करें, यह मोबाइल नंबर हमारे रिकॉर्ड में नहीं मिला। कृपया अपना सही नंबर डालें या सहायता के लिए गौतम सर (8217598939) से संपर्क करें।"
+                    );
+                }
+            });
+        }
+    </script>
+</body>
+</html>

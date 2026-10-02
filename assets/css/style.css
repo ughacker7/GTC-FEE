@@ -1,0 +1,98 @@
+/* ==========================================================================
+Gautam Teaching Center - Core Style Sheet
+Optimized for Mobile Phones, Tablets, Laptops & High-DPI Displays
+========================================================================== */
+
+/* STREAMING_CHUNK:Configuring custom scrollbars and root variables */
+:root {
+--gtc-primary: #4f46e5;
+--gtc-primary-hover: #4338ca;
+--gtc-cyan: #06b6d4;
+--gtc-emerald: #10b981;
+--gtc-rose: #f43f5e;
+--gtc-bg-dark: #0b0f19;
+--gtc-surface-card: #0f172a;
+}
+
+/* Custom WebKit Scrollbars */
+::-webkit-scrollbar {
+width: 6px;
+height: 6px;
+}
+
+::-webkit-scrollbar-track {
+background: rgba(15, 23, 42, 0.7);
+}
+
+::-webkit-scrollbar-thumb {
+background: rgba(99, 102, 241, 0.35);
+border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+background: rgba(99, 102, 241, 0.7);
+}
+
+/* STREAMING_CHUNK:Setting global resets and touch improvements */
+html, body {
+margin: 0;
+padding: 0;
+width: 100%;
+min-height: 100vh;
+-webkit-font-smoothing: antialiased;
+-moz-osx-font-smoothing: grayscale;
+-webkit-tap-highlight-color: transparent;
+}
+
+/* Smooth transitions for interactive elements */
+button, a, input, select {
+transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Responsive Touch Target Helper for Mobile Phones */
+@media (max-width: 640px) {
+button, select, input[type="text"], input[type="tel"], input[type="password"], input[type="number"], input[type="date"] {
+min-height: 44px;
+}
+}
+
+/* STREAMING_CHUNK:Adding animation utilities for modals and badges */
+@keyframes pulseGlow {
+0%, 100% {
+opacity: 1;
+transform: scale(1);
+}
+50% {
+opacity: 0.75;
+transform: scale(1.04);
+}
+}
+
+.pulse-badge {
+animation: pulseGlow 2s infinite ease-in-out;
+}
+
+/* Glassmorphism Surface effect */
+.glass-panel {
+background: rgba(15, 23, 42, 0.85);
+backdrop-filter: blur(16px);
+-webkit-backdrop-filter: blur(16px);
+border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* STREAMING_CHUNK:Configuring specialized A4 print sheet rules */
+@media print {
+@page {
+size: A4 portrait;
+margin: 6mm;
+}
+
+body {
+background: #ffffff !important;
+color: #09090b !important;
+}
+
+header, nav, .no-print, button {
+display: none !important;
+}
+}

@@ -1,0 +1,2162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Teacher Command Dashboard - Gautam Teaching Center</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase Realtime Database SDK (Compat v10.8.0) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- SheetJS for 1-Click Excel Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #0b0f19;
+            color: #f1f5f9;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Custom scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.4); border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.7); }
+
+        /* A4 Print Engine: Fee Slips & 8-ID Cards Batch */
+        @media print {
+            @page { 
+                size: A4 portrait; 
+                margin: 4mm !important; 
+            }
+            body { 
+                background: white !important; 
+                color: black !important; 
+                font-family: 'Plus Jakarta Sans', sans-serif !important; 
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            header, nav, #main-ui, .no-print { 
+                display: none !important; 
+            }
+            #print-sheet-container { 
+                display: block !important; 
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .page-break { 
+                display: grid !important; 
+                grid-template-columns: 98mm 98mm !important; 
+                grid-template-rows: 70mm 70mm 70mm 70mm !important; 
+                gap: 3mm !important; 
+                width: 200mm !important; 
+                height: 289mm !important; 
+                max-height: 289mm !important;
+                box-sizing: border-box !important; 
+                break-after: page !important;
+                page-break-after: always !important;
+                page-break-inside: avoid !important;
+                margin: 0 auto !important;
+            }
+            
+            /* Fee Slip Card Styling in Print */
+            .print-slip-card { 
+                border: 1.5px dashed #1e293b !important; 
+                padding: 9px 11px !important; 
+                border-radius: 10px !important; 
+                background: #ffffff !important; 
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: space-between !important;
+                page-break-inside: avoid !important;
+                box-shadow: none !important;
+                position: relative !important;
+                color: #09090b !important;
+                font-size: 10px !important;
+            }
+
+            /* Professional Student ID Card (8 Per A4 Sheet - Exact 98mm x 70mm) */
+            .print-id-card {
+                border: 1.8px solid #0f172a !important;
+                border-radius: 10px !important;
+                background: #ffffff !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: space-between !important;
+                page-break-inside: avoid !important;
+                box-shadow: none !important;
+                overflow: hidden !important;
+                color: #09090b !important;
+                padding: 0 !important;
+                width: 98mm !important;
+                height: 70mm !important;
+                box-sizing: border-box !important;
+                position: relative !important;
+            }
+            .id-card-header {
+                background: linear-gradient(135deg, #0b1120 0%, #1e1b4b 100%) !important;
+                color: #ffffff !important;
+                padding: 4px 8px !important;
+                text-align: center !important;
+                border-bottom: 2.5px solid #f59e0b !important;
+                position: relative !important;
+            }
+            .id-card-body {
+                padding: 4px 8px !important;
+                display: flex !important;
+                gap: 8px !important;
+                align-items: center !important;
+                flex: 1 !important;
+                min-height: 0 !important;
+                background: #ffffff !important;
+                overflow: hidden !important;
+            }
+            .id-card-footer {
+                background: #f8fafc !important;
+                border-top: 1.2px solid #cbd5e1 !important;
+                padding: 4px 8px 6px 8px !important;
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: flex-end !important;
+                font-size: 8.5px !important;
+                flex-shrink: 0 !important;
+                box-sizing: border-box !important;
+            }
+            .signature-img {
+                height: 34px !important;
+                width: auto !important;
+                max-height: 36px !important;
+                max-width: 75px !important;
+                object-fit: contain !important;
+                display: block !important;
+                margin-bottom: 1px !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen selection:bg-indigo-600 selection:text-white">
+
+    <header class="bg-slate-900/90 backdrop-blur-xl border-b border-slate-800 sticky top-0 z-40 shadow-xl no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-indigo-600/30">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-sm sm:text-base text-white tracking-tight leading-tight">Gautam Teaching Center</h1>
+                    <span class="text-[10px] font-bold px-2 py-0.5 bg-indigo-500/10 text-indigo-400 rounded-md tracking-wider border border-indigo-500/20">TEACHER COMMAND DASHBOARD</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <!-- Export to Excel -->
+                <button onclick="exportToExcel()" class="hidden sm:flex items-center space-x-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 px-3.5 py-2 rounded-xl text-xs font-bold transition border border-emerald-500/30">
+                    <i class="fa-solid fa-file-excel"></i>
+                    <span>Export Excel</span>
+                </button>
+                <!-- Fee Due Reminders -->
+                <button onclick="openDueReminderModal()" class="flex items-center space-x-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 px-3.5 py-2 rounded-xl text-xs font-bold transition border border-amber-500/30 shadow-sm">
+                    <i class="fa-solid fa-bullhorn"></i>
+                    <span>Due Reminders</span>
+                </button>
+                <!-- Print All ID Cards (A4 Batch) -->
+                <button onclick="triggerPrintAllIDCards()" class="hidden sm:flex items-center space-x-1.5 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 px-3.5 py-2 rounded-xl text-xs font-bold transition border border-cyan-500/30 shadow-sm" title="Print All Student ID Cards on A4 Sheets">
+                    <i class="fa-solid fa-id-card"></i>
+                    <span>Print ID Cards</span>
+                </button>
+                <!-- Print All Fee Slips -->
+                <button onclick="triggerPrintSlips()" class="hidden sm:flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-xl text-xs font-bold transition border border-slate-700">
+                    <i class="fa-solid fa-print"></i>
+                    <span>Print Slips</span>
+                </button>
+                <!-- Logout -->
+                <button onclick="handleLogout()" class="flex items-center space-x-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 px-3.5 py-2 rounded-xl text-xs font-bold transition border border-rose-500/20">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    <span class="hidden sm:inline">Logout</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main id="main-ui" class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
+        
+        <!-- Summary KPI Metric Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 no-print">
+            <div class="bg-slate-900/90 backdrop-blur-xl p-5 sm:p-6 rounded-3xl border border-slate-800 shadow-xl flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Enrolled</p>
+                    <h2 class="text-2xl sm:text-3xl font-black text-white mt-1" id="total-students-count">0 Active</h2>
+                    <p class="text-[11px] text-slate-500 mt-1" id="kpi-filter-label">Live cloud records</p>
+                </div>
+                <div class="w-13 h-13 sm:w-14 sm:h-14 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-2xl flex items-center justify-center text-xl sm:text-2xl shadow-inner">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+            </div>
+
+            <div class="bg-slate-900/90 backdrop-blur-xl p-5 sm:p-6 rounded-3xl border border-slate-800 shadow-xl flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">Advance Paid</p>
+                    <h2 class="text-2xl sm:text-3xl font-black text-emerald-400 mt-1" id="advance-students-count">0 Students</h2>
+                    <p class="text-[11px] text-slate-500 mt-1">Surplus credit balance</p>
+                </div>
+                <div class="w-13 h-13 sm:w-14 sm:h-14 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-2xl flex items-center justify-center text-xl sm:text-2xl shadow-inner">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+            </div>
+
+            <div class="bg-slate-900/90 backdrop-blur-xl p-5 sm:p-6 rounded-3xl border border-slate-800 shadow-xl flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-bold text-rose-400 uppercase tracking-wider">Total Pending Dues</p>
+                    <h2 class="text-2xl sm:text-3xl font-black text-rose-400 mt-1" id="total-pending-dues">₹0</h2>
+                    <p class="text-[11px] text-slate-500 mt-1">Current uncollected dues</p>
+                </div>
+                <div class="w-13 h-13 sm:w-14 sm:h-14 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-2xl flex items-center justify-center text-xl sm:text-2xl shadow-inner">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3 bg-slate-900/90 backdrop-blur-xl p-4 rounded-3xl border border-slate-800 shadow-xl no-print">
+            <div class="relative flex-1">
+                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+                <input type="search" id="search-box" name="gtc_search_query" autocomplete="off" autocapitalize="off" spellcheck="false" readonly onfocus="this.removeAttribute('readonly');" onkeyup="filterStudents()" placeholder="Search by student, father, or phone number..." class="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-11 pr-4 py-3 text-sm font-semibold text-white focus:outline-none focus:border-indigo-500 transition">
+            </div>
+
+            <!-- CLASS FILTER DROPDOWN -->
+            <div class="flex items-center gap-2">
+                <div class="relative min-w-[150px] flex-1 sm:flex-none">
+                    <select id="class-filter" onchange="filterStudents()" class="w-full bg-slate-950 border border-slate-800 text-xs font-bold text-indigo-400 rounded-2xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition cursor-pointer appearance-none pr-9">
+                        <option value="all">🎓 All Classes</option>
+                        <option value="Class 1st">Class 1st</option>
+                        <option value="Class 2nd">Class 2nd</option>
+                        <option value="Class 3rd">Class 3rd</option>
+                        <option value="Class 4th">Class 4th</option>
+                        <option value="Class 5th">Class 5th</option>
+                        <option value="Class 6th">Class 6th</option>
+                        <option value="Class 7th">Class 7th</option>
+                        <option value="Class 8th">Class 8th</option>
+                        <option value="Class 9th">Class 9th</option>
+                        <option value="Class 10th">Class 10th</option>
+                        <option value="Class 11th">Class 11th</option>
+                        <option value="Class 12th">Class 12th</option>
+                        <option value="General">General / Other</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs pointer-events-none"></i>
+                </div>
+
+                <!-- Status Tabs -->
+                <div class="flex items-center gap-1.5 overflow-x-auto pb-0">
+                    <button onclick="setFilterStatus('all')" id="filter-all" class="px-3.5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 text-white transition whitespace-nowrap">All</button>
+                    <button onclick="setFilterStatus('due')" id="filter-due" class="px-3.5 py-2.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 hover:text-white transition whitespace-nowrap">Dues Only</button>
+                    <button onclick="setFilterStatus('advance')" id="filter-advance" class="px-3.5 py-2.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 hover:text-white transition whitespace-nowrap">Advance</button>
+                </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="flex items-center gap-2">
+                <button onclick="triggerPrintAllIDCards()" class="sm:hidden bg-cyan-600/20 text-cyan-400 p-3 rounded-2xl text-xs font-bold border border-cyan-500/30" title="Print All ID Cards">
+                    <i class="fa-solid fa-id-card"></i>
+                </button>
+                <button onclick="openDueReminderModal()" class="sm:hidden bg-amber-500/15 text-amber-400 p-3 rounded-2xl text-xs font-bold border border-amber-500/30" title="Fee Due Reminders">
+                    <i class="fa-solid fa-bullhorn"></i>
+                </button>
+                <button onclick="exportToExcel()" class="sm:hidden bg-emerald-600/20 text-emerald-400 p-3 rounded-2xl text-xs font-bold border border-emerald-500/30" title="Export Excel">
+                    <i class="fa-solid fa-file-excel"></i>
+                </button>
+                <button onclick="openAddStudentModal()" class="flex-1 md:flex-none bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white px-5 py-3 rounded-2xl text-xs font-bold transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-user-plus"></i>
+                    <span>Add Student</span>
+                </button>
+                <button onclick="triggerPrintSlips()" class="sm:hidden bg-slate-800 text-white p-3 rounded-2xl text-xs font-bold border border-slate-700" title="Print Slips">
+                    <i class="fa-solid fa-print"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-slate-900/90 backdrop-blur-xl rounded-3xl border border-slate-800 shadow-xl overflow-hidden no-print">
+            
+            <!-- Desktop Table View -->
+            <div class="hidden lg:block overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-950/60 border-b border-slate-800 text-[11px] uppercase text-slate-400 font-bold tracking-wider">
+                            <th class="p-4">Student Details</th>
+                            <th class="p-4">Class</th>
+                            <th class="p-4">Father's Name</th>
+                            <th class="p-4">Admission</th>
+                            <th class="p-4">Monthly Fee</th>
+                            <th class="p-4">Cycles Paid</th>
+                            <th class="p-4">Account Status</th>
+                            <th class="p-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="students-table-body" class="divide-y divide-slate-800/80 text-sm font-medium"></tbody>
+                </table>
+            </div>
+
+            <!-- Mobile Card View -->
+            <div id="students-mobile-list" class="lg:hidden p-4 space-y-3"></div>
+
+            <!-- Empty State Container -->
+            <div id="no-records-msg" class="hidden p-12 text-center">
+                <div class="w-14 h-14 bg-slate-800 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-3 text-xl">
+                    <i class="fa-solid fa-user-slash"></i>
+                </div>
+                <h4 class="font-bold text-white text-base">No Students Found</h4>
+                <p class="text-xs text-slate-500 mt-1">Try changing the class filter or adjusting search query.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- PRINT CONTAINER (Hidden on screen, populated dynamically for slips or ID cards) -->
+    <div id="print-sheet-container" class="hidden"></div>
+    <div id="due-reminder-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center hidden opacity-0 transition-all duration-300 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-7 max-w-2xl w-full shadow-2xl space-y-4 transform scale-95 transition-all duration-300 max-h-[92vh] flex flex-col text-slate-100" id="due-reminder-box">
+            
+            <div class="flex justify-between items-start border-b border-slate-800 pb-3">
+                <div class="flex items-center space-x-3">
+                    <div class="w-11 h-11 rounded-2xl bg-amber-500/15 text-amber-400 flex items-center justify-center text-lg border border-amber-500/30 flex-shrink-0">
+                        <i class="fa-solid fa-bullhorn"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-black text-lg text-white tracking-tight">Fee Due Reminders</h3>
+                            <span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30" id="due-modal-badge">0 Pending</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-0.5">Ek-ek karke tap karein aur turant WhatsApp reminder bhejein:</p>
+                    </div>
+                </div>
+                <button onclick="closeDueReminderModal()" class="w-8 h-8 bg-slate-800 hover:bg-slate-700 rounded-xl flex items-center justify-center text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <div class="flex items-center justify-between bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs">
+                <div>
+                    <span class="text-slate-400 block text-[10px] uppercase font-bold">Total Dues List:</span>
+                    <span class="text-base font-black text-rose-400" id="due-modal-total-amt">₹0</span>
+                </div>
+                <div class="text-right">
+                    <span class="text-slate-500 text-[10px] uppercase font-bold block">Current Filter</span>
+                    <span class="text-xs font-bold text-indigo-400" id="due-modal-filter-name">All Classes</span>
+                </div>
+            </div>
+
+            <!-- Scrollable list of students with dues -->
+            <div id="due-students-queue-list" class="flex-1 overflow-y-auto space-y-2.5 pr-1 max-h-[55vh]"></div>
+
+            <div class="pt-2 border-t border-slate-800 flex justify-end">
+                <button onclick="closeDueReminderModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-5 py-2.5 rounded-xl text-xs transition border border-slate-700">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="student-profile-view-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center hidden opacity-0 transition-all duration-300 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-7 max-w-2xl w-full shadow-2xl space-y-5 transform scale-95 transition-all duration-300 max-h-[92vh] overflow-y-auto text-slate-100" id="profile-modal-box">
+            
+            <div class="flex justify-between items-start border-b border-slate-800 pb-4">
+                <div class="flex items-center space-x-3.5">
+                    <!-- Photo Box with Camera Uploader -->
+                    <div class="relative cursor-pointer group flex-shrink-0" onclick="document.getElementById('teacher-profile-photo-input').click()" title="Click to upload/change photo">
+                        <div class="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-indigo-500/10 border-2 border-indigo-500/30 flex items-center justify-center font-black text-2xl text-indigo-400 overflow-hidden group-hover:border-indigo-400 transition" id="view-avatar-box">
+                            <span id="view-avatar-text">S</span>
+                            <img id="view-avatar-img" class="w-full h-full object-cover hidden" alt="Student Photo">
+                        </div>
+                        <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center text-[10px] font-black shadow-lg ring-2 ring-slate-900">
+                            <i class="fa-solid fa-camera"></i>
+                        </div>
+                    </div>
+                    <input type="file" id="teacher-profile-photo-input" accept="image/*" class="hidden" onchange="handleTeacherPhotoUpload(event)">
+
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-black text-lg sm:text-xl text-white tracking-tight" id="view-student-name">Student Name</h3>
+                            <span class="text-[10px] font-bold px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded border border-indigo-500/30" id="view-student-class">Class 10th</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-0.5">S/O <span id="view-student-father" class="font-bold text-slate-300">-</span> | Mob: <span id="view-student-phone" class="font-bold text-slate-300">-</span></p>
+                        <p class="text-[11px] text-cyan-400 font-semibold mt-1">
+                            <i class="fa-solid fa-cloud-arrow-up mr-1 text-[10px]"></i>Tap photo to change student image
+                        </p>
+                    </div>
+                </div>
+
+                <button onclick="closeStudentProfileModal()" class="w-8 h-8 bg-slate-800 hover:bg-slate-700 rounded-xl flex items-center justify-center text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Quick Details Cards -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Admission Date</span>
+                    <span class="text-xs font-bold text-white mt-0.5 block" id="view-student-admission">-</span>
+                </div>
+                <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Monthly Rate</span>
+                    <span class="text-xs font-black text-indigo-400 mt-0.5 block">₹<span id="view-student-fee">150</span>/mo</span>
+                </div>
+                <div class="col-span-2 sm:col-span-1 bg-slate-950 p-3 rounded-2xl border border-slate-800">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Net Balance Status</span>
+                    <span class="text-base font-black mt-0.5 block" id="view-student-balance-box">₹0</span>
+                    <span class="text-[9px] text-slate-500 block" id="view-student-status-text">Status</span>
+                </div>
+            </div>
+
+            <!-- 12-Month Academic Billing Cycles -->
+            <div class="space-y-2.5">
+                <div class="flex justify-between items-center text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    <span>12-Month Billing Cycles View:</span>
+                    <span class="text-indigo-400 text-[11px]" id="view-student-cycles">0 / 12 Cycles</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-56 overflow-y-auto pr-1" id="view-student-cycles-grid"></div>
+            </div>
+
+            <!-- Transaction Ledger -->
+            <div class="space-y-2 border-t border-slate-800 pt-3">
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Payment Receipts History</h4>
+                <div id="view-student-transactions-list" class="max-h-36 overflow-y-auto space-y-2 text-xs pr-1"></div>
+            </div>
+
+            <!-- CTA Actions -->
+            <div class="flex flex-wrap gap-2.5 pt-2">
+                <button onclick="printSingleStudentIDCard(activeProfileStudentId)" class="bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 font-bold px-4 py-2.5 rounded-xl text-xs transition border border-cyan-500/30 flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-id-card"></i>
+                    <span>Print This ID Card</span>
+                </button>
+                <button id="view-modal-pay-cta" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-credit-card"></i>
+                    <span>Collect Fee for this Student</span>
+                </button>
+                <button onclick="closeStudentProfileModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2.5 rounded-xl text-xs transition border border-slate-700">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="payment-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden opacity-0 transition-all duration-300 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl space-y-5 transform scale-95 transition-all duration-300 max-h-[92vh] overflow-y-auto text-slate-100" id="payment-modal-box">
+            
+            <div class="flex justify-between items-start border-b border-slate-800 pb-4">
+                <div class="flex items-center space-x-3">
+                    <div id="pay-student-avatar" class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center font-black text-lg overflow-hidden flex-shrink-0">
+                        S
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-black text-lg sm:text-xl text-white tracking-tight" id="pay-student-title">Student Name</h3>
+                            <span class="text-[10px] font-bold px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded border border-indigo-500/30" id="pay-student-class">Class 10th</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-0.5">Tick months to calculate fee and mark payment cycles</p>
+                    </div>
+                </div>
+                <button onclick="closePaymentModal()" class="w-8 h-8 bg-slate-800 hover:bg-slate-700 rounded-xl flex items-center justify-center text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Student Rate & Admission banner -->
+            <div class="grid grid-cols-2 gap-3 bg-slate-950 p-4 rounded-2xl border border-slate-800 text-xs">
+                <div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Monthly Rate</span>
+                    <span class="text-base font-black text-indigo-400" id="pay-monthly-rate">₹150/mo</span>
+                </div>
+                <div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Admission Date</span>
+                    <span class="text-sm font-bold text-slate-200" id="pay-admission-date">-</span>
+                </div>
+            </div>
+
+            <!-- 12 Cycles Checklist -->
+            <div class="space-y-3">
+                <div class="flex justify-between items-center text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    <span>12 Months Session Cycles:</span>
+                    <span class="text-indigo-400 text-[11px]"><i class="fa-solid fa-cloud-arrow-up mr-1"></i>Live Sync</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5" id="pay-months-checklist"></div>
+            </div>
+
+            <!-- Cash Received & Mode -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Cash Received (₹)</label>
+                    <input type="number" id="cash-received-input" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-base font-black text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Payment Mode</label>
+                    <select id="payment-mode-select" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm font-bold text-white focus:outline-none focus:border-indigo-500">
+                        <option value="Cash">Cash</option>
+                        <option value="Online / UPI">Online / UPI</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Transaction Ledger -->
+            <div class="space-y-2 border-t border-slate-800 pt-4">
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                    <span>Past Transactions</span>
+                </h4>
+                <div id="pay-modal-transactions" class="max-h-36 overflow-y-auto space-y-2 text-xs pr-1"></div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                <button onclick="processPayment(true)" class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3 px-5 rounded-2xl text-xs transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-sm"></i>
+                    <span>Save & Send WhatsApp Receipt</span>
+                </button>
+                <button onclick="processPayment(false)" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-5 rounded-2xl text-xs transition">
+                    Save Only
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="add-student-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden opacity-0 transition-all duration-300 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-4 transform scale-95 transition-all duration-300 max-h-[92vh] overflow-y-auto" id="add-modal-box">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="font-black text-lg text-white tracking-tight" id="modal-heading-title">Add New Student</h3>
+                <button onclick="closeAddStudentModal()" class="w-8 h-8 bg-slate-800 hover:bg-slate-700 rounded-xl flex items-center justify-center text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <input type="hidden" id="edit-student-id">
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Student Full Name</label>
+                        <input type="text" id="new-name" placeholder="e.g. Rahul Sharma" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-1">🎓 Student Class</label>
+                        <select id="new-class" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus:border-indigo-500">
+                            <option value="Class 1st">Class 1st</option>
+                            <option value="Class 2nd">Class 2nd</option>
+                            <option value="Class 3rd">Class 3rd</option>
+                            <option value="Class 4th">Class 4th</option>
+                            <option value="Class 5th">Class 5th</option>
+                            <option value="Class 6th">Class 6th</option>
+                            <option value="Class 7th">Class 7th</option>
+                            <option value="Class 8th">Class 8th</option>
+                            <option value="Class 9th">Class 9th</option>
+                            <option value="Class 10th">Class 10th</option>
+                            <option value="Class 11th">Class 11th</option>
+                            <option value="Class 12th">Class 12th</option>
+                            <option value="General">General / Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Father's Name</label>
+                    <input type="text" id="new-father" placeholder="e.g. Ramesh Sharma" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Mobile Number</label>
+                        <input type="tel" id="new-phone" maxlength="10" placeholder="10-digit number" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Monthly Fee (₹)</label>
+                        <input type="number" id="new-fee" value="150" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm font-bold text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Admission Date</label>
+                    <input type="date" id="new-date" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus:border-indigo-500">
+                </div>
+            </div>
+
+            <!-- Dual Action Buttons: Save & Send WhatsApp or Save Only -->
+            <div class="flex flex-col sm:flex-row gap-2.5 pt-3 border-t border-slate-800">
+                <button type="button" onclick="saveStudentData(true)" class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3 px-4 rounded-xl text-xs transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-sm"></i>
+                    <span>Save & Send WhatsApp</span>
+                </button>
+                <button type="button" onclick="saveStudentData(false)" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-xl text-xs transition">
+                    Save Only
+                </button>
+                <button type="button" onclick="closeAddStudentModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 px-4 rounded-xl text-xs transition">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-alert-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden opacity-0 transition-all duration-300 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center transform scale-95 transition-all duration-300" id="alert-modal-box">
+            <div id="alert-icon" class="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto mb-3 text-xl font-bold border border-indigo-500/30">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <h3 id="alert-title" class="text-base font-bold text-white mb-1.5">Notification</h3>
+            <p id="alert-message" class="text-slate-400 text-xs mb-5">Operation finished successfully.</p>
+            <button onclick="closeAlertModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl transition text-xs border border-slate-700">OK</button>
+        </div>
+    </div>
+
+    <div id="custom-confirm-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden opacity-0 transition-all duration-300 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center transform scale-95 transition-all duration-300">
+            <div class="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-3 text-xl font-bold border border-rose-500/30">
+                <i class="fa-solid fa-trash-can"></i>
+            </div>
+            <h3 class="text-base font-bold text-white mb-1.5" id="confirm-title">Are you sure?</h3>
+            <p class="text-slate-400 text-xs mb-5" id="confirm-message">This action cannot be undone.</p>
+            <div class="flex space-x-3">
+                <button onclick="closeConfirmModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs border border-slate-700 transition">Cancel</button>
+                <button id="confirm-yes-btn" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-lg shadow-rose-600/30">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inline Auth Fallback Modal for direct link protection -->
+    <div id="teacher-auth-modal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 p-6 sm:p-8 rounded-3xl max-w-sm w-full text-center shadow-2xl space-y-4">
+            <div class="w-14 h-14 bg-indigo-500/10 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto text-2xl border border-indigo-500/20">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-black text-white">Teacher Login Required</h2>
+                <p class="text-xs text-slate-400 mt-1">Satra expired ya direct link access block hai. Please login karein:</p>
+            </div>
+            <div class="space-y-3 pt-1 text-left">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Teacher ID</label>
+                    <input type="text" id="inline-teacher-id" value="Gautam" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Password</label>
+                    <input type="password" id="inline-teacher-pass" placeholder="Enter password" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <button type="button" onclick="handleInlineTeacherLogin()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold text-xs transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                    <span>Login to Dashboard</span>
+                </button>
+                <button type="button" onclick="safeNavigate('index.html')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl font-bold text-[11px] transition border border-slate-700 flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Go to Home Login Page</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <script>
+        function safeNavigate(targetUrl) {
+            if (!targetUrl) return;
+            if (window.location.protocol === 'blob:' || !window.location.protocol.startsWith('http')) {
+                const authModal = document.getElementById('teacher-auth-modal');
+                if (authModal) authModal.classList.remove('hidden');
+                return;
+            }
+            try {
+                window.location.href = targetUrl;
+            } catch (err) {
+                console.warn("Navigation failed safely:", err);
+            }
+        }
+
+        function checkTeacherAuth() {
+            if (localStorage.getItem("teacherLoggedIn") !== "true") {
+                if (window.location.protocol !== 'blob:' && window.location.protocol.startsWith('http')) {
+                    safeNavigate("index.html");
+                } else {
+                    const authModal = document.getElementById('teacher-auth-modal');
+                    if (authModal) authModal.classList.remove('hidden');
+                }
+                return false;
+            }
+            return true;
+        }
+
+        function handleInlineTeacherLogin() {
+            const id = (document.getElementById('inline-teacher-id')?.value || "Gautam").trim();
+            const pass = (document.getElementById('inline-teacher-pass')?.value || "").trim();
+            /* Secret code Base64 for GS361389 */
+            const secretCode = "R1MzNjEzODk=";
+
+            if (id.toLowerCase() === "gautam" && btoa(pass) === secretCode) {
+                localStorage.setItem("teacherLoggedIn", "true");
+                const authModal = document.getElementById('teacher-auth-modal');
+                if (authModal) authModal.classList.add('hidden');
+                fetchStudentsFromCloud();
+            } else {
+                showAlert("Access Denied", "Galat Teacher ID ya Password! Sahi password enter karein.", true);
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem("teacherLoggedIn");
+            if (window.location.protocol !== 'blob:' && window.location.protocol.startsWith('http')) {
+                safeNavigate("index.html");
+            } else {
+                const authModal = document.getElementById('teacher-auth-modal');
+                if (authModal) authModal.classList.remove('hidden');
+                showAlert("Logged Out", "Teacher session successfully cleared.");
+            }
+        }
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBDJnlr-VJt3OqvGeCRIzNCUjhLndpvyoQ",
+            authDomain: "gtc-fee-portal.firebaseapp.com",
+            databaseURL: "https://gtc-fee-portal-default-rtdb.firebaseio.com",
+            projectId: "gtc-fee-portal",
+            storageBucket: "gtc-fee-portal.firebasestorage.app",
+            messagingSenderId: "861357054407",
+            appId: "1:861357054407:web:8d1c8a5dce4c3969c361e2",
+            measurementId: "G-SJWZFVM3YQ"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let activeStudentId = null;
+        let activeProfileStudentId = null;
+        let initialPaidCount = 0;
+        let globalStudents = [];
+        let currentFilter = 'all';
+
+        function generateDynamicCycles(admissionDateStr) {
+            if(!admissionDateStr) admissionDateStr = "2026-01-26";
+            let parts = admissionDateStr.includes('-') ? admissionDateStr.split('-') : admissionDateStr.split('/');
+            let year, month, day;
+            if (admissionDateStr.includes('-')) {
+                year = parseInt(parts[0]);
+                month = parseInt(parts[1]) - 1;
+                day = parseInt(parts[2]);
+            } else {
+                day = parseInt(parts[0]);
+                month = parseInt(parts[1]) - 1;
+                year = parseInt(parts[2]);
+                if(year < 100) year += 2000;
+            }
+
+            let cycles = [];
+            let startDate = new Date(year, month, day);
+            let today = new Date();
+
+            for (let i = 0; i < 12; i++) {
+                let cycleStart = new Date(startDate.getFullYear(), startDate.getMonth() + i, startDate.getDate());
+                let cycleEnd = new Date(startDate.getFullYear(), startDate.getMonth() + i + 1, startDate.getDate());
+                cycleEnd.setDate(cycleEnd.getDate() - 1);
+
+                let status = "DUE";
+                if (today >= cycleStart && today <= cycleEnd) {
+                    status = "RUNNING";
+                } else if (today > cycleEnd) {
+                    status = "PAID_OR_OVERDUE";
+                } else {
+                    status = "UPCOMING";
+                }
+
+                cycles.push({
+                    title: `${formatDate(cycleStart)} – ${formatDate(cycleEnd)}`,
+                    status: status,
+                    startDate: cycleStart,
+                    endDate: cycleEnd
+                });
+            }
+            return cycles;
+        }
+
+        function formatDate(date) {
+            let d = date.getDate();
+            let m = date.toLocaleString('default', { month: 'short' });
+            let y = date.getFullYear();
+            return `${d} ${m} ${y}`;
+        }
+
+        function fetchStudentsFromCloud() {
+            db.ref('gtc_students').on('value', (snapshot) => {
+                globalStudents = snapshot.val() || [];
+                renderDashboard();
+            });
+        }
+
+        function setFilterStatus(status) {
+            currentFilter = status;
+            ['all', 'due', 'advance'].forEach(tab => {
+                const btn = document.getElementById(`filter-${tab}`);
+                if(tab === status) {
+                    btn.className = "px-3.5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 text-white transition whitespace-nowrap";
+                } else {
+                    btn.className = "px-3.5 py-2.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-400 hover:text-white transition whitespace-nowrap";
+                }
+            });
+            renderDashboard();
+        }
+        function renderDashboard() {
+            const tbody = document.getElementById('students-table-body');
+            const mobileContainer = document.getElementById('students-mobile-list');
+            const searchQuery = (document.getElementById('search-box')?.value || "").toLowerCase().trim();
+            const classFilter = document.getElementById('class-filter')?.value || 'all';
+
+            let tableHtml = "";
+            let mobileHtml = "";
+            let totalDuesSum = 0;
+            let advanceCount = 0;
+            let visibleCount = 0;
+            let classFilteredCount = 0;
+
+            globalStudents.forEach((s) => {
+                let sClass = s.studentClass || "Class 10th";
+
+                const matchesClass = (classFilter === 'all') || (sClass === classFilter);
+                if (!matchesClass) return;
+
+                classFilteredCount++;
+
+                let cycles = generateDynamicCycles(s.admissionDate || "2026-01-26");
+                let today = new Date();
+                
+                let runningIndex = cycles.findIndex(c => today >= c.startDate && today <= c.endDate);
+                if(runningIndex === -1 && today > cycles[11].endDate) runningIndex = 12;
+                if(runningIndex === -1) runningIndex = 0;
+
+                let expectedTotalFee = runningIndex * (s.monthlyFee || 150);
+                let totalPaidSoFar = (s.transactions || []).reduce((acc, t) => acc + (t.amount || 0), 0);
+                let netBalance = expectedTotalFee - totalPaidSoFar;
+
+                if (netBalance > 0) totalDuesSum += netBalance;
+                if (netBalance < 0) advanceCount++;
+
+                const matchesSearch = s.name.toLowerCase().includes(searchQuery) || (s.phone && s.phone.includes(searchQuery)) || (s.fatherName && s.fatherName.toLowerCase().includes(searchQuery));
+                let matchesStatus = true;
+                if (currentFilter === 'due') matchesStatus = netBalance > 0;
+                if (currentFilter === 'advance') matchesStatus = netBalance < 0;
+
+                if (!matchesSearch || !matchesStatus) return;
+
+                visibleCount++;
+
+                const balanceBadge = netBalance < 0 
+                    ? `<span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">+₹${Math.abs(netBalance)} Advance</span>` 
+                    : (netBalance === 0 
+                        ? `<span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">No Dues</span>` 
+                        : `<span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">Due: ₹${netBalance}</span>`);
+
+                const avatarContent = s.avatar 
+                    ? `<img src="${s.avatar}" alt="${s.name}" class="w-full h-full object-cover">` 
+                    : s.name.charAt(0);
+
+                tableHtml += `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="p-4 flex items-center space-x-3 cursor-pointer" onclick="openStudentProfileModal('${s.id}')">
+                            <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center font-black overflow-hidden flex-shrink-0 shadow-sm">
+                                ${avatarContent}
+                            </div>
+                            <div>
+                                <p class="font-bold text-white hover:text-indigo-400 transition">${s.name}</p>
+                                <p class="text-xs text-slate-400">Mob: ${s.phone}</p>
+                            </div>
+                        </td>
+                        <td class="p-4">
+                            <span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 whitespace-nowrap">
+                                🎓 ${sClass}
+                            </span>
+                        </td>
+                        <td class="p-4 text-slate-300 font-semibold">${s.fatherName}</td>
+                        <td class="p-4 text-slate-400 text-xs">${s.admissionDate || '-'}</td>
+                        <td class="p-4 font-black text-white">₹${s.monthlyFee}/mo</td>
+                        <td class="p-4 text-slate-300 text-xs font-bold">${s.paidCycles || 0} / 12 Cycles</td>
+                        <td class="p-4">${balanceBadge}</td>
+                        <td class="p-4 text-right space-x-1.5" data-id="${s.id}">
+                            <button class="idcard-btn bg-cyan-600/15 hover:bg-cyan-600/25 text-cyan-400 px-3 py-1.5 rounded-xl font-bold text-xs transition border border-cyan-500/30" title="Print Student ID Card">🪪 ID</button>
+                            <button class="view-btn bg-cyan-600/10 hover:bg-cyan-600/20 text-cyan-400 px-3 py-1.5 rounded-xl font-bold text-xs transition border border-cyan-500/20">View</button>
+                            <button class="pay-btn bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-xl font-bold text-xs transition shadow-sm">Pay</button>
+                            <button class="edit-btn bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl font-bold text-xs transition border border-slate-700">Edit</button>
+                            <button class="del-btn bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 px-3 py-1.5 rounded-xl font-bold text-xs transition border border-rose-500/20">Del</button>
+                        </td>
+                    </tr>
+                `;
+
+                mobileHtml += `
+                    <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 space-y-3">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center space-x-3 cursor-pointer" onclick="openStudentProfileModal('${s.id}')">
+                                <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-black border border-indigo-500/20 overflow-hidden flex-shrink-0 shadow-sm">
+                                    ${avatarContent}
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-1.5">
+                                        <h4 class="font-bold text-white text-sm hover:text-indigo-400 transition">${s.name}</h4>
+                                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300">${sClass}</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-400">S/O ${s.fatherName} | ${s.phone}</p>
+                                </div>
+                            </div>
+                            <div>${balanceBadge}</div>
+                        </div>
+
+                        <div class="flex justify-between items-center text-xs py-2 border-y border-slate-800/80">
+                            <span class="text-slate-400 font-semibold">Fee: ₹${s.monthlyFee}/mo</span>
+                            <span class="text-indigo-400 font-bold">${s.paidCycles || 0}/12 Cycles Paid</span>
+                        </div>
+
+                        <div class="flex items-center gap-2 pt-1" data-id="${s.id}">
+                            <button class="idcard-btn bg-cyan-600/15 text-cyan-400 px-3 py-2 rounded-xl text-xs font-bold border border-cyan-500/30">🪪 ID</button>
+                            <button class="view-btn flex-1 bg-cyan-600/10 text-cyan-400 py-2 rounded-xl text-xs font-bold border border-cyan-500/20">View</button>
+                            <button class="pay-btn flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-xs font-bold transition">Collect</button>
+                            <button class="edit-btn bg-slate-800 text-slate-300 px-3 py-2 rounded-xl text-xs font-bold border border-slate-700">Edit</button>
+                            <button class="del-btn bg-rose-500/10 text-rose-400 px-3 py-2 rounded-xl text-xs font-bold border border-rose-500/20">Del</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            tbody.innerHTML = tableHtml;
+            mobileContainer.innerHTML = mobileHtml;
+
+            const noMsg = document.getElementById('no-records-msg');
+            if(visibleCount === 0) {
+                noMsg.classList.remove('hidden');
+            } else {
+                noMsg.classList.add('hidden');
+            }
+
+            document.getElementById('total-students-count').innerText = `${classFilteredCount} Active`;
+            document.getElementById('advance-students-count').innerText = `${advanceCount} Students`;
+            document.getElementById('total-pending-dues').innerText = `₹${totalDuesSum}`;
+            
+            const labelEl = document.getElementById('kpi-filter-label');
+            if (labelEl) {
+                labelEl.innerText = classFilter === 'all' ? "All classes combined" : `Filtered: ${classFilter}`;
+            }
+
+            attachTableActionListeners();
+        }
+
+        function filterStudents() {
+            renderDashboard();
+        }
+
+        function getFilteredStudentsList() {
+            const classFilter = document.getElementById('class-filter')?.value || 'all';
+            let list = globalStudents.filter(s => {
+                if (classFilter === 'all') return true;
+                return (s.studentClass || 'Class 10th') === classFilter;
+            });
+            return list.length > 0 ? list : globalStudents;
+        }
+
+        const OFFICIAL_STUDENT_PORTAL_URL = "https://gautamteachingcenterfee.netlify.app/student.html";
+
+        function buildStudentVerificationURL(student) {
+            const baseUrl = OFFICIAL_STUDENT_PORTAL_URL;
+            const rollId = "GTC-" + (student.id ? student.id.slice(-5) : "00000");
+            const cleanPhone = (student.phone || "").replace(/\D/g, "");
+            return `${baseUrl}?verify=1&id=${encodeURIComponent(student.id || '')}&roll=${encodeURIComponent(rollId)}&name=${encodeURIComponent(student.name || '')}&cls=${encodeURIComponent(student.studentClass || 'Class 10th')}&father=${encodeURIComponent(student.fatherName || '')}&phone=${encodeURIComponent(cleanPhone)}&adm=${encodeURIComponent(student.admissionDate || '')}`;
+        }
+
+        function generateQRCodeHtml(text) {
+            const qrUrl1 = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(text)}`;
+            const qrUrl2 = `https://quickchart.io/qr?size=180&text=${encodeURIComponent(text)}`;
+            return `<img src="${qrUrl1}" class="w-full h-full object-contain" alt="QR" onerror="if(this.src!=='${qrUrl2}'){this.src='${qrUrl2}';}">`;
+        }
+
+        function executePrintWithImagesLoaded() {
+            const container = document.getElementById('print-sheet-container');
+            if (!container) {
+                window.print();
+                return;
+            }
+            const images = Array.from(container.querySelectorAll('img'));
+            if (images.length === 0) {
+                window.print();
+                return;
+            }
+
+            let loaded = 0;
+            const total = images.length;
+            let printed = false;
+
+            const tryPrint = () => {
+                if (!printed) {
+                    printed = true;
+                    setTimeout(() => {
+                        window.print();
+                    }, 350);
+                }
+            };
+
+            const timeoutTimer = setTimeout(tryPrint, 2000);
+
+            const onImageSettled = () => {
+                loaded++;
+                if (loaded >= total) {
+                    clearTimeout(timeoutTimer);
+                    tryPrint();
+                }
+            };
+
+            images.forEach((img) => {
+                if (img.complete && img.naturalWidth > 0) {
+                    onImageSettled();
+                } else {
+                    img.addEventListener('load', onImageSettled, { once: true });
+                    img.addEventListener('error', onImageSettled, { once: true });
+                }
+            });
+        }
+        function triggerPrintAllIDCards() {
+            const students = getFilteredStudentsList();
+            if (!students || students.length === 0) {
+                showAlert("No Students", "Print karne ke liye koi student nahi mila!", true);
+                return;
+            }
+
+            const printContainer = document.getElementById('print-sheet-container');
+            printContainer.innerHTML = "";
+
+            const chunkSize = 8;
+
+            for (let i = 0; i < students.length; i += chunkSize) {
+                const chunk = students.slice(i, i + chunkSize);
+                const pageDiv = document.createElement('div');
+                pageDiv.className = "page-break";
+
+                let html = "";
+                chunk.forEach((s) => {
+                    const sClass = s.studentClass || "Class 10th";
+                    const avatarHtml = s.avatar 
+                        ? `<img src="${s.avatar}" class="w-full h-full object-cover">` 
+                        : `<div class="w-full h-full bg-slate-100 flex items-center justify-center font-black text-slate-800 text-3xl">${(s.name || 'S').charAt(0)}</div>`;
+
+                    const verifyUrl = buildStudentVerificationURL(s);
+                    const qrImgHtml = generateQRCodeHtml(verifyUrl);
+
+                    html += `
+                        <div class="print-id-card">
+                            <!-- Premium Header with Golden Accent -->
+                            <div class="id-card-header">
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                                    <span style="font-size: 13px;">🎓</span>
+                                    <h4 style="font-weight: 900; font-size: 12.5px; letter-spacing: 0.8px; text-transform: uppercase; margin: 0; line-height: 1.1; color: #ffffff;">GAUTAM TEACHING CENTER</h4>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px; padding: 0 3px;">
+                                    <span style="font-size: 7.5px; color: #fde047; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">STUDENT IDENTITY CARD</span>
+                                    <span style="font-size: 7px; background: rgba(255,255,255,0.2); color: #ffffff; padding: 1px 6px; border-radius: 4px; font-weight: 700; letter-spacing: 0.5px;">SESSION 2026-27</span>
+                                </div>
+                            </div>
+
+                            <!-- ID Card Body (Expanded Passport Photo 28mm x 38mm & High-Legibility Details) -->
+                            <div class="id-card-body">
+                                <!-- Photo Frame (28mm x 38mm) -->
+                                <div style="width: 28mm; height: 38mm; border-radius: 8px; border: 2px solid #0f172a; overflow: hidden; flex-shrink: 0; background: #f1f5f9; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.12);">
+                                    ${avatarHtml}
+                                </div>
+
+                                <!-- Student Biodata Grid -->
+                                <div style="flex: 1; min-width: 0; font-size: 9.5px; line-height: 1.45; color: #1e293b;">
+                                    <div style="border-bottom: 1.5px solid #e2e8f0; padding-bottom: 2.5px; margin-bottom: 2.5px;">
+                                        <p style="font-weight: 900; font-size: 13.5px; color: #09090b; text-transform: uppercase; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.15;">${s.name}</p>
+                                        <span style="display: inline-block; font-size: 8.5px; font-weight: 800; background: #e0e7ff; color: #3730a3; padding: 1px 6px; border-radius: 4px; margin-top: 2px;">🎓 ${sClass}</span>
+                                    </div>
+                                    <p style="margin: 1.5px 0;"><span style="font-weight: 700; color: #64748b; font-size: 8.5px;">FATHER:</span> <b style="color: #0f172a;">${s.fatherName || '-'}</b></p>
+                                    <p style="margin: 1.5px 0;"><span style="font-weight: 700; color: #64748b; font-size: 8.5px;">PHONE:</span> <b style="color: #0f172a;">${s.phone || '-'}</b></p>
+                                    <p style="margin: 1.5px 0;"><span style="font-weight: 700; color: #64748b; font-size: 8.5px;">ADM. DATE:</span> <b style="color: #0f172a;">${s.admissionDate || '-'}</b></p>
+                                    <p style="margin: 1.5px 0; font-size: 9px; color: #475569;"><span style="font-weight: 700; color: #64748b;">ROLL ID:</span> <b style="color: #047857; font-family: monospace; font-size: 10px;">GTC-${s.id ? s.id.slice(-5) : '00000'}</b></p>
+                                </div>
+
+                                <!-- Live Scan Verification QR (Links to Student ID Card view) -->
+                                <div style="width: 19mm; height: 19mm; flex-shrink: 0; border: 1.2px solid #cbd5e1; padding: 1.5px; border-radius: 6px; background: #ffffff; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                    <div style="width: 15mm; height: 15mm;">${qrImgHtml}</div>
+                                    <span style="font-size: 5px; font-weight: 800; color: #475569; display: block; margin-top: 1px; line-height: 1; letter-spacing: 0.3px;">SCAN VERIFY</span>
+                                </div>
+                            </div>
+
+                            <!-- ID Card Footer with Signature -->
+                            <div class="id-card-footer" style="padding-bottom: 5px !important;">
+                                <div style="padding-bottom: 2px;">
+                                    <p style="font-weight: 800; color: #0f172a; font-size: 8.5px; margin: 0; line-height: 1.2;">📞 Helpline: +91 8217598939</p>
+                                    <p style="font-size: 7px; color: #64748b; margin: 1px 0 0 0; line-height: 1.1;">Gautam Teaching Center, Official Card</p>
+                                </div>
+                                <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; padding-bottom: 2px;">
+                                    <img src="image/signature.png" class="signature-img" onerror="if(this.src.indexOf('images/')===-1){this.src='images/signature.png';}else{this.style.display='none';this.nextElementSibling.style.display='block';}" alt="Sign">
+                                    <p style="font-weight: 700; font-size: 9px; color: #0f172a; margin: 0; display: none; font-family: serif; font-style: italic;">Gautam Sir</p>
+                                    <span style="font-size: 7.5px; font-weight: 800; color: #334155; border-top: 1.2px solid #0f172a; padding-top: 1px; margin-top: 1px; display: block; line-height: 1;">Authorized Signatory</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                pageDiv.innerHTML = html;
+                printContainer.appendChild(pageDiv);
+            }
+
+            executePrintWithImagesLoaded();
+        }
+
+        // Print Single Student ID Card (from modal or table)
+        function printSingleStudentIDCard(studentId) {
+            const student = globalStudents.find(s => s.id === studentId);
+            if (!student) return;
+
+            const printContainer = document.getElementById('print-sheet-container');
+            printContainer.innerHTML = "";
+
+            const sClass = student.studentClass || "Class 10th";
+            const avatarHtml = student.avatar 
+                ? `<img src="${student.avatar}" class="w-full h-full object-cover">` 
+                : `<div class="w-full h-full bg-slate-100 flex items-center justify-center font-black text-slate-800 text-4xl">${(student.name || 'S').charAt(0)}</div>`;
+
+            const verifyUrl = buildStudentVerificationURL(student);
+            const qrImgHtml = generateQRCodeHtml(verifyUrl);
+
+            const pageDiv = document.createElement('div');
+            pageDiv.className = "page-break";
+            pageDiv.innerHTML = `
+                <div class="print-id-card">
+                    <div class="id-card-header">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <span style="font-size: 13px;">🎓</span>
+                            <h4 style="font-weight: 900; font-size: 12.5px; letter-spacing: 0.8px; text-transform: uppercase; margin: 0; line-height: 1.1; color: #ffffff;">GAUTAM TEACHING CENTER</h4>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px; padding: 0 3px;">
+                            <span style="font-size: 7.5px; color: #fde047; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">STUDENT IDENTITY CARD</span>
+                            <span style="font-size: 7px; background: rgba(255,255,255,0.2); color: #ffffff; padding: 1px 6px; border-radius: 4px; font-weight: 700; letter-spacing: 0.5px;">SESSION 2026-27</span>
+                        </div>
+                    </div>
+                    <div class="id-card-body">
+                        <div style="width: 28mm; height: 38mm; border-radius: 8px; border: 2px solid #0f172a; overflow: hidden; flex-shrink: 0; background: #f1f5f9; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.12);">
+                            ${avatarHtml}
+                        </div>
+                        <div style="flex: 1; min-width: 0; font-size: 9.5px; line-height: 1.45; color: #1e293b;">
+                            <div style="border-bottom: 1.5px solid #e2e8f0; padding-bottom: 2.5px; margin-bottom: 2.5px;">
+                                <p style="font-weight: 900; font-size: 13.5px; color: #09090b; text-transform: uppercase; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.15;">${student.name}</p>
+                                <span style="display: inline-block; font-size: 8.5px; font-weight: 800; background: #e0e7ff; color: #3730a3; padding: 1px 6px; border-radius: 4px; margin-top: 2px;">🎓 ${sClass}</span>
+                            </div>
+                            <p style="margin: 1.5px 0;"><span style="font-weight: 700; color: #64748b; font-size: 8.5px;">FATHER:</span> <b style="color: #0f172a;">${student.fatherName || '-'}</b></p>
+                            <p style="margin: 1.5px 0;"><span style="font-weight: 700; color: #64748b; font-size: 8.5px;">PHONE:</span> <b style="color: #0f172a;">${student.phone || '-'}</b></p>
+                            <p style="margin: 1.5px 0;"><span style="font-weight: 700; color: #64748b; font-size: 8.5px;">ADM. DATE:</span> <b style="color: #0f172a;">${student.admissionDate || '-'}</b></p>
+                            <p style="margin: 1.5px 0; font-size: 9px; color: #475569;"><span style="font-weight: 700; color: #64748b;">ROLL ID:</span> <b style="color: #047857; font-family: monospace; font-size: 10px;">GTC-${student.id ? student.id.slice(-5) : '00000'}</b></p>
+                        </div>
+                        <div style="width: 19mm; height: 19mm; flex-shrink: 0; border: 1.2px solid #cbd5e1; padding: 1.5px; border-radius: 6px; background: #ffffff; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                            <div style="width: 15mm; height: 15mm;">${qrImgHtml}</div>
+                            <span style="font-size: 5px; font-weight: 800; color: #475569; display: block; margin-top: 1px; line-height: 1; letter-spacing: 0.3px;">SCAN VERIFY</span>
+                        </div>
+                    </div>
+                    <div class="id-card-footer" style="padding-bottom: 5px !important;">
+                        <div style="padding-bottom: 2px;">
+                            <p style="font-weight: 800; color: #0f172a; font-size: 8.5px; margin: 0; line-height: 1.2;">📞 Helpline: +91 8217598939</p>
+                            <p style="font-size: 7px; color: #64748b; margin: 1px 0 0 0; line-height: 1.1;">Gautam Teaching Center, Official Card</p>
+                        </div>
+                        <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; padding-bottom: 2px;">
+                            <img src="image/signature.png" class="signature-img" onerror="if(this.src.indexOf('images/')===-1){this.src='images/signature.png';}else{this.style.display='none';this.nextElementSibling.style.display='block';}" alt="Sign">
+                            <p style="font-weight: 700; font-size: 9px; color: #0f172a; margin: 0; display: none; font-family: serif; font-style: italic;">Gautam Sir</p>
+                            <span style="font-size: 7.5px; font-weight: 800; color: #334155; border-top: 1.2px solid #0f172a; padding-top: 1px; margin-top: 1px; display: block; line-height: 1;">Authorized Signatory</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            printContainer.appendChild(pageDiv);
+            executePrintWithImagesLoaded();
+        }
+
+        function triggerPrintSlips() {
+            const students = getFilteredStudentsList();
+            if (!students || students.length === 0) {
+                showAlert("No Students", "Print karne ke liye koi student nahi mila!", true);
+                return;
+            }
+
+            const printContainer = document.getElementById('print-sheet-container');
+            printContainer.innerHTML = "";
+
+            const chunkSize = 8;
+
+            for (let i = 0; i < students.length; i += chunkSize) {
+                const chunk = students.slice(i, i + chunkSize);
+                const pageDiv = document.createElement('div');
+                pageDiv.className = "page-break";
+
+                let html = "";
+                chunk.forEach((s) => {
+                    let cycles = generateDynamicCycles(s.admissionDate || "2026-01-26");
+                    let today = new Date();
+                    let runningIndex = cycles.findIndex(c => today >= c.startDate && today <= c.endDate);
+                    if(runningIndex === -1 && today > cycles[11].endDate) runningIndex = 12;
+                    if(runningIndex === -1) runningIndex = 0;
+
+                    let expectedTotalFee = runningIndex * (s.monthlyFee || 150);
+                    let totalPaidSoFar = (s.transactions || []).reduce((acc, t) => acc + (t.amount || 0), 0);
+                    let netBalance = expectedTotalFee - totalPaidSoFar;
+                    let lastTx = (s.transactions && s.transactions.length > 0) ? s.transactions[s.transactions.length - 1] : null;
+
+                    html += `
+                        <div class="print-slip-card">
+                            <div style="border-bottom: 1.5px solid #0f172a; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <h4 style="font-weight: 900; font-size: 12px; margin: 0; text-transform: uppercase;">GAUTAM TEACHING CENTER</h4>
+                                    <span style="font-size: 7.5px; color: #475569; font-weight: 700;">OFFICIAL MONTHLY FEE SLIP</span>
+                                </div>
+                                <span style="font-size: 8px; font-weight: 800; border: 1px solid #0f172a; padding: 1px 4px; border-radius: 4px;">RECEIPT</span>
+                            </div>
+
+                            <div style="margin: 4px 0; line-height: 1.4; font-size: 9.5px;">
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span><b>Student:</b> ${s.name} (${s.studentClass || 'Class 10th'})</span>
+                                    <span><b>Date:</b> ${lastTx ? lastTx.date : s.admissionDate}</span>
+                                </div>
+                                <div><b>Father:</b> ${s.fatherName} | <b>Phone:</b> ${s.phone}</div>
+                                <div style="display: flex; justify-content: space-between; margin-top: 2px;">
+                                    <span><b>Rate:</b> ₹${s.monthlyFee}/mo</span>
+                                    <span><b>Cycles Paid:</b> ${s.paidCycles || 0} / 12</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-top: 2px; padding-top: 2px; border-top: 1px dashed #cbd5e1;">
+                                    <span><b>Last Paid:</b> ₹${lastTx ? lastTx.amount : 0}</span>
+                                    <span><b>Status:</b> ${netBalance > 0 ? 'Due: ₹' + netBalance : (netBalance < 0 ? 'Adv: ₹' + Math.abs(netBalance) : 'Clear')}</span>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid #cbd5e1; padding-top: 2px; font-size: 7.5px;">
+                                <span>Helpline: +91 8217598939</span>
+                                <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
+                                    <img src="image/signature.png" class="signature-img" onerror="if(this.src.indexOf('images/')===-1){this.src='images/signature.png';}else{this.style.display='none';}" alt="Sign">
+                                    <span style="font-weight: 800; border-top: 1px solid #0f172a; padding-top: 1px;">Gautam Sir</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                pageDiv.innerHTML = html;
+                printContainer.appendChild(pageDiv);
+            }
+
+            executePrintWithImagesLoaded();
+        }
+        function openDueReminderModal() {
+            const list = getFilteredStudentsList();
+            const queueList = document.getElementById('due-students-queue-list');
+            const classFilter = document.getElementById('class-filter')?.value || 'all';
+            
+            document.getElementById('due-modal-filter-name').innerText = classFilter === 'all' ? 'All Classes' : classFilter;
+
+            let dueStudents = [];
+            let totalDueAmt = 0;
+
+            list.forEach(s => {
+                let cycles = generateDynamicCycles(s.admissionDate || "2026-01-26");
+                let today = new Date();
+                let runningIndex = cycles.findIndex(c => today >= c.startDate && today <= c.endDate);
+                if(runningIndex === -1 && today > cycles[11].endDate) runningIndex = 12;
+                if(runningIndex === -1) runningIndex = 0;
+
+                let expectedTotalFee = runningIndex * (s.monthlyFee || 150);
+                let totalPaidSoFar = (s.transactions || []).reduce((acc, t) => acc + (t.amount || 0), 0);
+                let netBalance = expectedTotalFee - totalPaidSoFar;
+
+                if (netBalance > 0) {
+                    totalDueAmt += netBalance;
+                    dueStudents.push({
+                        student: s,
+                        dueAmount: netBalance,
+                        overdueCycles: cycles.slice(s.paidCycles || 0, runningIndex + 1).map(c => c.title)
+                    });
+                }
+            });
+
+            document.getElementById('due-modal-badge').innerText = `${dueStudents.length} Pending`;
+            document.getElementById('due-modal-total-amt').innerText = `₹${totalDueAmt}`;
+
+            if (dueStudents.length === 0) {
+                queueList.innerHTML = `
+                    <div class="p-8 text-center bg-slate-950/60 rounded-2xl border border-slate-800">
+                        <i class="fa-solid fa-circle-check text-emerald-400 text-3xl mb-2"></i>
+                        <p class="text-sm font-bold text-white">Sabhi fees jama hain!</p>
+                        <p class="text-xs text-slate-400 mt-0.5">Is filter me kisi bhi student ka fee due nahi hai.</p>
+                    </div>
+                `;
+            } else {
+                let html = "";
+                dueStudents.forEach((item, idx) => {
+                    const s = item.student;
+                    html += `
+                        <div class="p-3.5 bg-slate-950/80 rounded-2xl border border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center font-black text-sm flex-shrink-0">
+                                    ${idx + 1}
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-1.5">
+                                        <h4 class="font-bold text-white text-sm">${s.name}</h4>
+                                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300">${s.studentClass || 'Class 10th'}</span>
+                                    </div>
+                                    <p class="text-xs text-slate-400">S/O ${s.fatherName} | Mob: ${s.phone}</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3">
+                                <div class="text-left sm:text-right">
+                                    <span class="text-[10px] text-slate-500 uppercase font-bold block">Pending</span>
+                                    <span class="text-base font-black text-rose-400">₹${item.dueAmount}</span>
+                                </div>
+                                <button type="button" onclick="sendIndividualDueWhatsApp('${s.id}', ${item.dueAmount}, this)" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition shadow-md flex items-center gap-1.5 flex-shrink-0">
+                                    <i class="fa-brands fa-whatsapp text-sm"></i>
+                                    <span>Send Reminder</span>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                queueList.innerHTML = html;
+            }
+
+            const modal = document.getElementById('due-reminder-modal');
+            const box = document.getElementById('due-reminder-box');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                box.classList.remove('scale-95');
+                box.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeDueReminderModal() {
+            const modal = document.getElementById('due-reminder-modal');
+            const box = document.getElementById('due-reminder-box');
+            modal.classList.add('opacity-0');
+            box.classList.remove('scale-100');
+            box.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function sendIndividualDueWhatsApp(studentId, dueAmount, btnEl) {
+            const s = globalStudents.find(x => x.id === studentId);
+            if (!s) return;
+
+            const eBell = String.fromCodePoint(0x1F514);   // 🔔
+            const eUser = String.fromCodePoint(0x1F464);   // 👤
+            const eFamily = String.fromCodePoint(0x1F468, 0x200D, 0x1F466); // 👨‍👦
+            const eGrad = String.fromCodePoint(0x1F393);   // 🎓
+            const eWarn = String.fromCodePoint(0x26A0);    // ⚠️
+            const eCard = String.fromCodePoint(0x1F4B3);   // 💳
+            const eLink = String.fromCodePoint(0x1F517);   // 🔗
+            const ePhone = String.fromCodePoint(0x1F4DE);  // 📞
+
+            const cleanPhone = (s.phone || "").replace(/\D/g, "");
+            const portalUrl = OFFICIAL_STUDENT_PORTAL_URL;
+
+            const msg = 
+`${eBell} *GAUTAM TEACHING CENTER* ${eBell}
+_Monthly Fee Gentle Reminder_
+━━━━━━━━━━━━━━━━━━━━━
+${eUser} *Student:* ${s.name}
+${eFamily} *Father:* ${s.fatherName}
+${eGrad} *Class:* ${s.studentClass || 'Class 10th'}
+━━━━━━━━━━━━━━━━━━━━━
+${eWarn} *Pending Dues:* ₹${dueAmount}
+━━━━━━━━━━━━━━━━━━━━━
+${eCard} *Pay Online (Google Pay / PhonePe / Paytm):*
+UPI ID: 8217598939-3@ybl
+
+${eLink} *Check Statement & Verified ID Card:*
+${portalUrl}
+
+_Kripya samay par fee jama karke padhai nirantar chalne me sahayata karein._
+${ePhone} *Gautam Sir:* +91 8217598939`;
+
+            const waUrl = `https://api.whatsapp.com/send?phone=91${cleanPhone}&text=${encodeURIComponent(msg)}`;
+            window.open(waUrl, '_blank');
+
+            if (btnEl) {
+                btnEl.className = "bg-slate-800 text-emerald-400 font-bold px-3 py-2 rounded-xl text-xs border border-emerald-500/30 flex items-center gap-1.5 flex-shrink-0";
+                btnEl.innerHTML = `<i class="fa-solid fa-check"></i><span>Sent ✓</span>`;
+            }
+        }
+
+        function openAddStudentModal(editId = null) {
+            const modal = document.getElementById('add-student-modal');
+            const box = document.getElementById('add-modal-box');
+            const heading = document.getElementById('modal-heading-title');
+            
+            if (editId) {
+                const s = globalStudents.find(x => x.id === editId);
+                if (s) {
+                    heading.innerText = "Edit Student Details";
+                    document.getElementById('edit-student-id').value = s.id;
+                    document.getElementById('new-name').value = s.name;
+                    document.getElementById('new-class').value = s.studentClass || "Class 10th";
+                    document.getElementById('new-father').value = s.fatherName;
+                    document.getElementById('new-phone').value = s.phone;
+                    document.getElementById('new-fee').value = s.monthlyFee || 150;
+                    document.getElementById('new-date').value = s.admissionDate || "";
+                }
+            } else {
+                heading.innerText = "Add New Student";
+                document.getElementById('edit-student-id').value = "";
+                document.getElementById('new-name').value = "";
+                document.getElementById('new-class').value = "Class 10th";
+                document.getElementById('new-father').value = "";
+                document.getElementById('new-phone').value = "";
+                document.getElementById('new-fee').value = "150";
+                
+                const now = new Date();
+                const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+                document.getElementById('new-date').value = todayStr;
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                box.classList.remove('scale-95');
+                box.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeAddStudentModal() {
+            const modal = document.getElementById('add-student-modal');
+            const box = document.getElementById('add-modal-box');
+            modal.classList.add('opacity-0');
+            box.classList.remove('scale-100');
+            box.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function saveStudentData(sendWhatsApp = false) {
+            const id = document.getElementById('edit-student-id').value;
+            const name = document.getElementById('new-name').value.trim();
+            const studentClass = document.getElementById('new-class').value;
+            const father = document.getElementById('new-father').value.trim();
+            const phone = document.getElementById('new-phone').value.trim();
+            const fee = parseInt(document.getElementById('new-fee').value) || 150;
+            const date = document.getElementById('new-date').value;
+
+            if (!name || !father || !phone || !date) {
+                showAlert("Incomplete Information", "Kripya sabhi zaroori details (Name, Father, Phone, Admission Date) bharein!", true);
+                return;
+            }
+
+            if (phone.length !== 10) {
+                showAlert("Invalid Phone", "Kripya sahi 10-digit mobile number enter karein!", true);
+                return;
+            }
+
+            const isNewStudent = !id;
+            const studentId = id || String(Date.now());
+            const targetIndex = isNewStudent ? globalStudents.length : globalStudents.findIndex(s => s.id === id);
+
+            let updatedStudentData = {};
+            if (!isNewStudent && targetIndex !== -1) {
+                updatedStudentData = {
+                    ...globalStudents[targetIndex],
+                    name: name,
+                    studentClass: studentClass,
+                    fatherName: father,
+                    phone: phone,
+                    monthlyFee: fee,
+                    admissionDate: date
+                };
+            } else {
+                updatedStudentData = {
+                    id: studentId,
+                    name: name,
+                    studentClass: studentClass,
+                    fatherName: father,
+                    phone: phone,
+                    monthlyFee: fee,
+                    admissionDate: date,
+                    paidCycles: 0,
+                    transactions: []
+                };
+            }
+
+            showAlert("Saving to Cloud...", "Firebase par data sync ho raha hai, kripya intezar karein...");
+
+            db.ref('gtc_students/' + targetIndex).set(updatedStudentData).then(() => {
+                closeAlertModal();
+                closeAddStudentModal();
+                showAlert("Success ✓", isNewStudent ? "Naya student safalta-purvak jud gaya!" : "Student details update ho gayi!");
+
+                if (sendWhatsApp) {
+                    sendAdmissionWhatsApp(updatedStudentData);
+                }
+            }).catch((err) => {
+                showAlert("Database Error", "Data save nahi ho paya: " + err.message, true);
+            });
+        }
+
+        function sendAdmissionWhatsApp(student) {
+            const eGrad = String.fromCodePoint(0x1F393);   // 🎓
+            const eUser = String.fromCodePoint(0x1F464);   // 👤
+            const eFamily = String.fromCodePoint(0x1F468, 0x200D, 0x1F466); // 👨‍👦
+            const eId = String.fromCodePoint(0x1F194);     // 🆔
+            const eCash = String.fromCodePoint(0x1F4B5);   // 💵
+            const eCal = String.fromCodePoint(0x1F4C5);    // 📅
+            const eMob = String.fromCodePoint(0x1F4F1);    // 📱
+            const eLink = String.fromCodePoint(0x1F517);   // 🔗
+            const eHands = String.fromCodePoint(0x1F64F);  // 🙏
+            const ePhone = String.fromCodePoint(0x1F4DE);  // 📞
+
+            const rollId = "GTC-" + (student.id ? student.id.slice(-5) : "00000");
+            const cleanPhone = (student.phone || "").replace(/\D/g, "");
+            const portalUrl = OFFICIAL_STUDENT_PORTAL_URL;
+
+            const msg = 
+`${eGrad} *GAUTAM TEACHING CENTER* ${eGrad}
+_New Admission Confirmation_
+━━━━━━━━━━━━━━━━━━━━━
+${eUser} *Student:* ${student.name}
+${eFamily} *Father:* ${student.fatherName}
+${eGrad} *Class:* ${student.studentClass || 'Class 10th'}
+━━━━━━━━━━━━━━━━━━━━━
+${eId} *Roll ID:* ${rollId}
+${eCash} *Monthly Fee:* ₹${student.monthlyFee || 150}/month
+${eCal} *Admission Date:* ${student.admissionDate || '-'}
+${eMob} *Registered Mobile:* ${student.phone}
+━━━━━━━━━━━━━━━━━━━━━
+${eLink} *Digital Student Portal & ID Card:*
+${portalUrl}
+
+_Coaching me aapka hardik swagat hai!_ ${eHands}
+${ePhone} *Gautam Sir:* +91 8217598939`;
+
+            const waUrl = `https://api.whatsapp.com/send?phone=91${cleanPhone}&text=${encodeURIComponent(msg)}`;
+            window.open(waUrl, '_blank');
+        }
+        function openStudentProfileModal(studentId) {
+            activeProfileStudentId = studentId;
+            const student = globalStudents.find(s => s.id === studentId);
+            if (!student) return;
+
+            document.getElementById('view-student-name').innerText = student.name;
+            document.getElementById('view-student-class').innerText = student.studentClass || 'Class 10th';
+            document.getElementById('view-student-father').innerText = student.fatherName;
+            document.getElementById('view-student-phone').innerText = student.phone;
+            document.getElementById('view-student-admission').innerText = student.admissionDate || '-';
+            document.getElementById('view-student-fee').innerText = student.monthlyFee || 150;
+
+            const avatarBox = document.getElementById('view-avatar-box');
+            const avatarImg = document.getElementById('view-avatar-img');
+            const avatarText = document.getElementById('view-avatar-text');
+
+            if (student.avatar) {
+                avatarImg.src = student.avatar;
+                avatarImg.classList.remove('hidden');
+                avatarText.classList.add('hidden');
+            } else {
+                avatarImg.classList.add('hidden');
+                avatarText.classList.remove('hidden');
+                avatarText.innerText = student.name.charAt(0);
+            }
+
+            let cycles = generateDynamicCycles(student.admissionDate || "2026-01-26");
+            let today = new Date();
+            let runningIndex = cycles.findIndex(c => today >= c.startDate && today <= c.endDate);
+            if(runningIndex === -1 && today > cycles[11].endDate) runningIndex = 12;
+            if(runningIndex === -1) runningIndex = 0;
+
+            let expectedTotalFee = runningIndex * (student.monthlyFee || 150);
+            let totalPaidSoFar = (student.transactions || []).reduce((acc, t) => acc + (t.amount || 0), 0);
+            let netBalance = expectedTotalFee - totalPaidSoFar;
+
+            const balanceBox = document.getElementById('view-student-balance-box');
+            const statusText = document.getElementById('view-student-status-text');
+
+            if (netBalance > 0) {
+                balanceBox.className = "text-base font-black mt-0.5 block text-rose-400";
+                balanceBox.innerText = `₹${netBalance} Due`;
+                statusText.innerText = "Payment Pending";
+            } else if (netBalance < 0) {
+                balanceBox.className = "text-base font-black mt-0.5 block text-emerald-400";
+                balanceBox.innerText = `+₹${Math.abs(netBalance)} Adv`;
+                statusText.innerText = "Surplus Balance";
+            } else {
+                balanceBox.className = "text-base font-black mt-0.5 block text-cyan-400";
+                balanceBox.innerText = `₹0 Clear`;
+                statusText.innerText = "All dues paid";
+            }
+
+            document.getElementById('view-student-cycles').innerText = `${student.paidCycles || 0} / 12 Cycles`;
+
+            const grid = document.getElementById('view-student-cycles-grid');
+            let cycleHtml = "";
+            cycles.forEach((c, idx) => {
+                let badge = idx < (student.paidCycles || 0)
+                    ? `<span class="text-[9px] font-black px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">PAID ✓</span>`
+                    : (c.status === "RUNNING"
+                        ? `<span class="text-[9px] font-black px-2 py-0.5 rounded bg-cyan-500 text-slate-950">RUNNING</span>`
+                        : (c.status === "PAID_OR_OVERDUE"
+                            ? `<span class="text-[9px] font-black px-2 py-0.5 rounded bg-rose-500/20 text-rose-400">DUE</span>`
+                            : `<span class="text-[9px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400">UPCOMING</span>`));
+
+                cycleHtml += `
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex justify-between items-center text-xs">
+                        <span class="font-bold text-slate-300">C${idx+1}: ${c.title.split('–')[0].trim()}</span>
+                        <div>${badge}</div>
+                    </div>
+                `;
+            });
+            grid.innerHTML = cycleHtml;
+
+            const txList = document.getElementById('view-student-transactions-list');
+            if (!student.transactions || student.transactions.length === 0) {
+                txList.innerHTML = `<p class="text-slate-500 italic p-3 text-center">No payment transactions recorded yet.</p>`;
+            } else {
+                let txHtml = "";
+                student.transactions.slice().reverse().forEach(t => {
+                    txHtml += `
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex justify-between items-center">
+                            <div>
+                                <span class="font-black text-cyan-400 block">${t.receiptId}</span>
+                                <span class="text-[10px] text-slate-400">${t.date} • ${t.cyclesCovered || '-'}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="font-black text-emerald-400 text-sm">₹${t.amount}</span>
+                                <span class="text-[10px] text-slate-400 block">${t.mode}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                txList.innerHTML = txHtml;
+            }
+
+            document.getElementById('view-modal-pay-cta').onclick = () => {
+                closeStudentProfileModal();
+                openPaymentModal(studentId);
+            };
+
+            const modal = document.getElementById('student-profile-view-modal');
+            const box = document.getElementById('profile-modal-box');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                box.classList.remove('scale-95');
+                box.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeStudentProfileModal() {
+            const modal = document.getElementById('student-profile-view-modal');
+            const box = document.getElementById('profile-modal-box');
+            modal.classList.add('opacity-0');
+            box.classList.remove('scale-100');
+            box.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function handleTeacherPhotoUpload(event) {
+            const file = event.target.files[0];
+            if (!file || !activeProfileStudentId) return;
+
+            if (!file.type.startsWith('image/')) {
+                showAlert("Invalid File", "Kripya sirf valid photo (JPG/PNG) select karein!", true);
+                return;
+            }
+
+            showAlert("Processing Photo...", "Photo optimize hokar cloud pe upload ho rahi hai...");
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_SIZE = 260;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_SIZE) {
+                            height = Math.round((height * MAX_SIZE) / width);
+                            width = MAX_SIZE;
+                        }
+                    } else {
+                        if (height > MAX_SIZE) {
+                            width = Math.round((width * MAX_SIZE) / height);
+                            height = MAX_SIZE;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    const optimizedBase64 = canvas.toDataURL('image/jpeg', 0.82);
+
+                    const sIdx = globalStudents.findIndex(s => s.id === activeProfileStudentId);
+                    if (sIdx !== -1) {
+                        db.ref('gtc_students/' + sIdx).update({ avatar: optimizedBase64 }).then(() => {
+                            globalStudents[sIdx].avatar = optimizedBase64;
+                            const avatarImg = document.getElementById('view-avatar-img');
+                            const avatarText = document.getElementById('view-avatar-text');
+                            avatarImg.src = optimizedBase64;
+                            avatarImg.classList.remove('hidden');
+                            avatarText.classList.add('hidden');
+                            showAlert("Photo Updated! ✓", "Student ki profile photo cloud par save ho gayi.");
+                        }).catch((err) => {
+                            showAlert("Error", "Photo update karne me samasya: " + err.message, true);
+                        });
+                    }
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+        function openPaymentModal(studentId) {
+            activeStudentId = studentId;
+            const student = globalStudents.find(s => s.id === studentId);
+            if (!student) return;
+
+            document.getElementById('pay-student-title').innerText = student.name;
+            document.getElementById('pay-student-class').innerText = student.studentClass || "Class 10th";
+            document.getElementById('pay-monthly-rate').innerText = `₹${student.monthlyFee || 150}/mo`;
+            document.getElementById('pay-admission-date').innerText = student.admissionDate || "2026-01-26";
+            
+            const avatarBox = document.getElementById('pay-student-avatar');
+            if (student.avatar) {
+                avatarBox.innerHTML = `<img src="${student.avatar}" class="w-full h-full object-cover">`;
+            } else {
+                avatarBox.innerText = student.name.charAt(0);
+            }
+
+            initialPaidCount = student.paidCycles || 0;
+            renderPaymentChecklist(student.admissionDate, initialPaidCount);
+            
+            document.getElementById('cash-received-input').value = "";
+            renderPaymentTransactions(student.transactions || []);
+
+            const modal = document.getElementById('payment-modal');
+            const box = document.getElementById('payment-modal-box');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                box.classList.remove('scale-95');
+                box.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closePaymentModal() {
+            const modal = document.getElementById('payment-modal');
+            const box = document.getElementById('payment-modal-box');
+            modal.classList.add('opacity-0');
+            box.classList.remove('scale-100');
+            box.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function renderPaymentChecklist(admissionDate, paidCount) {
+            const checklistContainer = document.getElementById('pay-months-checklist');
+            let cycles = generateDynamicCycles(admissionDate);
+
+            let html = "";
+            cycles.forEach((c, index) => {
+                let isChecked = index < paidCount;
+                let disabledAttr = index < initialPaidCount ? "disabled" : "";
+                
+                let bgStyle = "bg-slate-950/80 border-slate-800 text-slate-300";
+                let badge = `<span class="text-[9px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400">UPCOMING</span>`;
+
+                if (index < initialPaidCount) {
+                    bgStyle = "bg-emerald-950/30 border-emerald-500/40 text-emerald-200 opacity-90";
+                    badge = `<span class="text-[9px] font-black px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">✓ PAID</span>`;
+                } else if (isChecked) {
+                    bgStyle = "bg-indigo-950/40 border-indigo-500/60 text-indigo-200 ring-1 ring-indigo-500/40";
+                    badge = `<span class="text-[9px] font-black px-2 py-0.5 rounded bg-indigo-500 text-white">SELECTED</span>`;
+                } else if (c.status === "RUNNING") {
+                    bgStyle = "bg-cyan-950/30 border-cyan-500/50 text-cyan-200";
+                    badge = `<span class="text-[9px] font-black px-2 py-0.5 rounded bg-cyan-500 text-slate-950 animate-pulse">⚡ RUNNING</span>`;
+                } else if (c.status === "PAID_OR_OVERDUE") {
+                    bgStyle = "bg-rose-950/30 border-rose-500/40 text-rose-200";
+                    badge = `<span class="text-[9px] font-black px-2 py-0.5 rounded bg-rose-500/20 text-rose-400">⚠ DUE</span>`;
+                }
+
+                html += `
+                    <label class="p-3 rounded-2xl border ${bgStyle} flex items-center justify-between cursor-pointer transition select-none hover:border-slate-700">
+                        <div class="pr-2 min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-extrabold text-white text-xs">Cycle ${index + 1}</span>
+                                ${badge}
+                            </div>
+                            <span class="text-[11px] text-slate-400 font-semibold block mt-0.5">${c.title}</span>
+                        </div>
+                        <input type="checkbox" value="${index}" ${isChecked ? 'checked' : ''} ${disabledAttr} onchange="handlePaymentCycleToggle(${index})" class="cycle-checkbox w-4 h-4 rounded text-indigo-600 focus:ring-0 cursor-pointer flex-shrink-0">
+                    </label>
+                `;
+            });
+            checklistContainer.innerHTML = html;
+        }
+
+        function handlePaymentCycleToggle(changedIndex) {
+            const student = globalStudents.find(s => s.id === activeStudentId);
+            if (!student) return;
+
+            const checkboxes = Array.from(document.querySelectorAll('.cycle-checkbox'));
+            let newPaidCount = initialPaidCount;
+
+            checkboxes.forEach((cb, idx) => {
+                if (idx >= initialPaidCount && cb.checked) {
+                    newPaidCount = Math.max(newPaidCount, idx + 1);
+                }
+            });
+
+            let addedCycles = newPaidCount - initialPaidCount;
+            let calculatedFee = addedCycles * (student.monthlyFee || 150);
+            document.getElementById('cash-received-input').value = calculatedFee > 0 ? calculatedFee : "";
+
+            renderPaymentChecklist(student.admissionDate, newPaidCount);
+        }
+
+        function renderPaymentTransactions(txs) {
+            const container = document.getElementById('pay-modal-transactions');
+            if(!txs || txs.length === 0) {
+                container.innerHTML = `<p class="p-3 text-center text-slate-500 italic">No transactions recorded yet.</p>`;
+                return;
+            }
+
+            let html = "";
+            txs.slice().reverse().forEach((t, i) => {
+                html += `
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-cyan-400">${t.receiptId}</span>
+                            <span class="text-slate-400 block text-[10px]">${t.date} • ${t.cyclesCovered || '-'}</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="font-black text-emerald-400">₹${t.amount}</span>
+                            <button type="button" onclick="deleteTransaction('${t.receiptId}')" class="text-rose-400 hover:text-rose-300 p-1.5 transition text-xs" title="Delete Receipt">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function processPayment(sendWhatsApp = false) {
+            const student = globalStudents.find(s => s.id === activeStudentId);
+            if (!student) return;
+
+            const cashInput = document.getElementById('cash-received-input').value;
+            const amount = parseInt(cashInput) || 0;
+            const mode = document.getElementById('payment-mode-select').value;
+
+            if (amount <= 0) {
+                showAlert("Invalid Amount", "Kripya valid Cash Received amount enter karein!", true);
+                return;
+            }
+
+            const checkboxes = Array.from(document.querySelectorAll('.cycle-checkbox'));
+            let highestSelected = initialPaidCount;
+            checkboxes.forEach((cb, idx) => {
+                if (cb.checked) highestSelected = Math.max(highestSelected, idx + 1);
+            });
+
+            const receiptId = "GTC-" + Math.floor(100000 + Math.random() * 900000);
+            const now = new Date();
+            const dateStr = `${now.getDate()} ${now.toLocaleString('default', { month: 'short' })} ${now.getFullYear()}, ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
+            let cycles = generateDynamicCycles(student.admissionDate);
+            let coveredMonths = [];
+            for (let i = initialPaidCount; i < highestSelected; i++) {
+                if (cycles[i]) {
+                    coveredMonths.push(`${cycles[i].title}`);
+                }
+            }
+
+            const newTx = {
+                receiptId: receiptId,
+                date: dateStr,
+                cyclesCovered: coveredMonths.join(',\n') || `Fee Payment (₹${amount})`,
+                amount: amount,
+                mode: mode,
+                addedCycles: highestSelected - initialPaidCount
+            };
+
+            const studentIndex = globalStudents.findIndex(s => s.id === activeStudentId);
+            if (studentIndex === -1) return;
+
+            let updatedTransactions = student.transactions ? [...student.transactions, newTx] : [newTx];
+
+            showAlert("Processing Payment...", "Receipt Firebase cloud ledger me record ho rahi hai...");
+
+            db.ref('gtc_students/' + studentIndex).update({
+                paidCycles: highestSelected,
+                transactions: updatedTransactions
+            }).then(() => {
+                closeAlertModal();
+                closePaymentModal();
+                showAlert("Payment Saved ✓", `Receipt ${receiptId} safalta-purvak record ho gayi!`);
+
+                if (sendWhatsApp) {
+                    const updatedStudent = {
+                        ...student,
+                        paidCycles: highestSelected,
+                        transactions: updatedTransactions
+                    };
+                    sendPaymentReceiptWhatsApp(updatedStudent, newTx);
+                }
+            }).catch((err) => {
+                showAlert("Database Error", "Payment save nahi ho payi: " + err.message, true);
+            });
+        }
+        function sendPaymentReceiptWhatsApp(student, tx) {
+            const eGrad = String.fromCodePoint(0x1F393);   // 🎓
+            const eUser = String.fromCodePoint(0x1F464);   // 👤
+            const eMan = String.fromCodePoint(0x1F468);    // 👨
+            const eCash = String.fromCodePoint(0x1F4B5);   // 💵
+            const eRec = String.fromCodePoint(0x1F9FE);    // 🧾
+            const eCal = String.fromCodePoint(0x1F4C5);    // 📅
+            const eChart = String.fromCodePoint(0x1F4CA);  // 📊
+            const eWarn = String.fromCodePoint(0x26A0);    // ⚠
+            const eCheck = String.fromCodePoint(0x2705);   // ✅
+            const eBolt = String.fromCodePoint(0x26A1);    // ⚡
+            const eLink = String.fromCodePoint(0x1F517);   // 🔗
+            const ePhone = String.fromCodePoint(0x1F4DE);  // 📞
+
+            const cleanPhone = (student.phone || "").replace(/\D/g, "");
+            const portalUrl = OFFICIAL_STUDENT_PORTAL_URL;
+
+            // Calculate current net balance after this transaction
+            let cycles = generateDynamicCycles(student.admissionDate || "2026-01-26");
+            let today = new Date();
+            let runningIndex = cycles.findIndex(c => today >= c.startDate && today <= c.endDate);
+            if(runningIndex === -1 && today > cycles[11].endDate) runningIndex = 12;
+            if(runningIndex === -1) runningIndex = 0;
+
+            let expectedFee = runningIndex * (student.monthlyFee || 150);
+            let totalPaid = (student.transactions || []).reduce((sum, t) => sum + (t.amount || 0), 0);
+            let netBalance = expectedFee - totalPaid;
+
+            let balanceLine = "";
+            if (netBalance > 0) {
+                balanceLine = `${eWarn} *Due (Pending):* ₹${netBalance}`;
+            } else if (netBalance < 0) {
+                balanceLine = `${eBolt} *Advance (Surplus):* ₹${Math.abs(netBalance)}`;
+            } else {
+                balanceLine = `${eCheck} *All Clear (No Dues)*`;
+            }
+
+            const msg = 
+`${eGrad} *GAUTAM TEACHING CENTER* ${eGrad}
+_Official Fee Payment Receipt_
+
+━━━━━━━━━━━━━━━━━━━━━
+${eUser} *Student:* ${student.name}
+${eMan} *Father:* ${student.fatherName}
+${eGrad} *Class:* ${student.studentClass || 'Class 10th'}
+━━━━━━━━━━━━━━━━━━━━━
+${eCash} *Amount Paid:* ₹${tx.amount} (${tx.mode})
+${eRec} *Receipt No:* ${tx.receiptId}
+${eCal} *Covered Cycles:*
+${tx.cyclesCovered}
+━━━━━━━━━━━━━━━━━━━━━
+${eChart} *Status:* ${balanceLine}
+
+${eLink} *View Full Ledger & ID Online:*
+${portalUrl}
+
+_Thank you for staying regular with your fees!_
+${ePhone} *Help:* +91 8217598939 (Gautam Sir)`;
+
+            const waUrl = `https://api.whatsapp.com/send?phone=91${cleanPhone}&text=${encodeURIComponent(msg)}`;
+            window.open(waUrl, '_blank');
+        }
+
+        function deleteTransaction(receiptId) {
+            showConfirm("Delete Receipt?", "Kya aap sach me is receipt ko delete karna chahte hain?", () => {
+                const sIdx = globalStudents.findIndex(s => s.id === activeStudentId);
+                if (sIdx === -1) return;
+
+                const targetStudent = globalStudents[sIdx];
+                const txIdx = (targetStudent.transactions || []).findIndex(t => t.receiptId === receiptId);
+                if (txIdx === -1) return;
+
+                const tx = targetStudent.transactions[txIdx];
+                const newPaidCycles = Math.max(0, (targetStudent.paidCycles || 0) - (tx.addedCycles || 0));
+                
+                let updatedTransactions = [...targetStudent.transactions];
+                updatedTransactions.splice(txIdx, 1);
+
+                showAlert("Deleting Receipt...", "Receipt delete ho rahi hai...");
+
+                db.ref('gtc_students/' + sIdx).update({
+                    paidCycles: newPaidCycles,
+                    transactions: updatedTransactions
+                }).then(() => {
+                    closeAlertModal();
+                    closeConfirmModal();
+                    showAlert("Deleted", "Receipt safalta-purvak delete ho gayi!");
+                    openPaymentModal(activeStudentId);
+                }).catch((err) => {
+                    showAlert("Error", "Receipt delete nahi ho payi: " + err.message, true);
+                });
+            });
+        }
+
+        function exportToExcel() {
+            const students = getFilteredStudentsList();
+            if (!students || students.length === 0) {
+                showAlert("No Data", "Export karne ke liye koi student data nahi mila!", true);
+                return;
+            }
+
+            const data = students.map((s, idx) => {
+                let cycles = generateDynamicCycles(s.admissionDate || "2026-01-26");
+                let today = new Date();
+                let runningIndex = cycles.findIndex(c => today >= c.startDate && today <= c.endDate);
+                if(runningIndex === -1 && today > cycles[11].endDate) runningIndex = 12;
+                if(runningIndex === -1) runningIndex = 0;
+
+                let expectedTotalFee = runningIndex * (s.monthlyFee || 150);
+                let totalPaidSoFar = (s.transactions || []).reduce((acc, t) => acc + (t.amount || 0), 0);
+                let netBalance = expectedTotalFee - totalPaidSoFar;
+
+                return {
+                    "S.No": idx + 1,
+                    "Roll ID": "GTC-" + (s.id ? s.id.slice(-5) : "00000"),
+                    "Student Name": s.name,
+                    "Class": s.studentClass || "Class 10th",
+                    "Father's Name": s.fatherName,
+                    "Mobile Number": s.phone,
+                    "Admission Date": s.admissionDate || "-",
+                    "Monthly Fee (₹)": s.monthlyFee || 150,
+                    "Paid Cycles": `${s.paidCycles || 0} / 12`,
+                    "Total Paid (₹)": totalPaidSoFar,
+                    "Net Balance Status": netBalance > 0 ? `Due: ₹${netBalance}` : (netBalance < 0 ? `Advance: ₹${Math.abs(netBalance)}` : "No Dues")
+                };
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(data);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "GTC_Students");
+            
+            const fileName = `GTC_Students_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            XLSX.writeFile(workbook, fileName);
+            showAlert("Exported ✓", `Excel file download ho gayi: ${fileName}`);
+        }
+        function attachTableActionListeners() {
+            document.querySelectorAll('.idcard-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const id = btn.closest('[data-id]').getAttribute('data-id');
+                    printSingleStudentIDCard(id);
+                };
+            });
+
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const id = btn.closest('[data-id]').getAttribute('data-id');
+                    openStudentProfileModal(id);
+                };
+            });
+
+            document.querySelectorAll('.pay-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const id = btn.closest('[data-id]').getAttribute('data-id');
+                    openPaymentModal(id);
+                };
+            });
+
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const id = btn.closest('[data-id]').getAttribute('data-id');
+                    openAddStudentModal(id);
+                };
+            });
+
+            document.querySelectorAll('.del-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const id = btn.closest('[data-id]').getAttribute('data-id');
+                    const s = globalStudents.find(x => x.id === id);
+                    if (!s) return;
+
+                    showConfirm("Delete Student?", `Kya aap sach me '${s.name}' ka record poori tarah delete karna chahte hain?`, () => {
+                        closeConfirmModal();
+                        showAlert("Deleting...", "Student ka record Firebase se delete ho raha hai...");
+
+                        const updatedList = globalStudents.filter(x => x.id !== id);
+
+                        db.ref('gtc_students').set(updatedList).then(() => {
+                            closeAlertModal();
+                            showAlert("Student Deleted", `'${s.name}' ka record delete ho gaya.`);
+                        }).catch((err) => {
+                            showAlert("Error", "Delete nahi ho paya: " + err.message, true);
+                        });
+                    });
+                };
+            });
+        }
+
+        function showAlert(title, message, isError = false) {
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-message').innerText = message;
+            const icon = document.getElementById('alert-icon');
+            if(isError) {
+                icon.className = "w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto mb-3 text-xl font-bold border border-rose-500/30";
+                icon.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>`;
+            } else {
+                icon.className = "w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto mb-3 text-xl font-bold border border-indigo-500/30";
+                icon.innerHTML = `<i class="fa-solid fa-check"></i>`;
+            }
+
+            const modal = document.getElementById('custom-alert-modal');
+            const box = document.getElementById('alert-modal-box');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                box.classList.remove('scale-95');
+                box.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeAlertModal() {
+            const modal = document.getElementById('custom-alert-modal');
+            const box = document.getElementById('alert-modal-box');
+            modal.classList.add('opacity-0');
+            box.classList.remove('scale-100');
+            box.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        let confirmCallback = null;
+        function showConfirm(title, message, onYes) {
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-message').innerText = message;
+            confirmCallback = onYes;
+
+            const modal = document.getElementById('custom-confirm-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('custom-confirm-modal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        document.getElementById('confirm-yes-btn')?.addEventListener('click', () => {
+            if (confirmCallback) confirmCallback();
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (checkTeacherAuth()) {
+                fetchStudentsFromCloud();
+            }
+        });
+    </script>
+</body>
+</html>
